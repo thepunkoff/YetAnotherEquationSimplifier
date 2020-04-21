@@ -12,6 +12,12 @@ namespace Yet_Another_Simplifier.Tokens
         }
 
         public double NumericValue { get; set; }
+
+        public override void NegateValue()
+        {
+            NumericValue *= -1;
+        }
+
         public override string ToString()
         {
             return NumericValue.ToString();

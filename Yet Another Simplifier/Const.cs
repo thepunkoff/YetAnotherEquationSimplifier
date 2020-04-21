@@ -11,7 +11,7 @@ namespace Yet_Another_Simplifier
         public static char LeftParenthesis = '(';
         public static char RightParenthesis = ')';
 
-        public static List<char> BinarySigns = new List<char> { '+', '-', '*', '/', '^'};
+        public static List<char> ExclusivelyBinarySigns = new List<char> { '+', '*', '/', '^'};
 
         public static char Add = '+';
         public static char Subtract= '-';

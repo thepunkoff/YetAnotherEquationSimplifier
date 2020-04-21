@@ -20,6 +20,14 @@ namespace Yet_Another_Simplifier
             preceding = GetType(preceding);
             current = GetType(current);
 
+            if (current == Const.Subtract && "=(".Contains(preceding))
+            {
+                return new SyntaxCheckResult
+                {
+                    Success = true
+                };
+            }
+
             if (current == 'c' && "vr".Contains(preceding))
             {
                 return new SyntaxCheckResult
@@ -36,27 +44,35 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'b' && "bl".Contains(preceding))
+            if (current == 'b' && "blem".Contains(preceding))
             {
                 return new SyntaxCheckResult
                 {
-                    ErrorMessage = "Invalid syntax: binary sign cannot go after a binary sign or a left parenthesis"
+                    ErrorMessage = "Invalid syntax: binary sign cannot go after a binary sign a left parenthesis or an equal sign"
                 };
             }
 
-            if (current == 'r' && "bl".Contains(preceding))
+            if (current == 'r' && "blem".Contains(preceding))
             {
                 return new SyntaxCheckResult
                 {
-                    ErrorMessage = "Invalid syntax: right parenthesis cannot go after a binary sign or a left parenthesis"
+                    ErrorMessage = "Invalid syntax: right parenthesis cannot go after a binary sign a left parenthesis or an equal sign"
                 };
             }
 
-            if (current == 'e' && "br".Contains(preceding))
+            if (current == 'e' && "bem".Contains(preceding))
             {
                 return new SyntaxCheckResult
                 {
-                    ErrorMessage = "Invalid syntax: equal sign cannot go after a binary sign or a right parenthesis"
+                    ErrorMessage = "Invalid syntax: equal sign cannot go after a binary sign or an equal sign"
+                };
+            }
+
+            if (current == 'm' && "bm".Contains(preceding))
+            {
+                return new SyntaxCheckResult
+                {
+                    ErrorMessage = "Invalid syntax: minus sign cannot go after a binary sign"
                 };
             }
 
@@ -76,9 +92,13 @@ namespace Yet_Another_Simplifier
             {
                 return 'v';
             }
-            else if(Const.BinarySigns.Contains(character))
+            else if(Const.ExclusivelyBinarySigns.Contains(character))
             {
                 return 'b';
+            }
+            else if (character == Const.Subtract)
+            {
+                return 'm';
             }
             else if(character == Const.Equal)
             {

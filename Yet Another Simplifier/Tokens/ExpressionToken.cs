@@ -12,5 +12,30 @@ namespace Yet_Another_Simplifier.Tokens
         }
 
         public List<Token> Members { get; set; }
+
+        public override void NegateValue()
+        {
+            foreach (var member in Members)
+            {
+                if (member is BinaryOperationToken)
+                {
+                    continue;
+                }
+
+                member.NegateValue();
+            }
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+
+            foreach (var member in Members)
+            {
+                sb.Append(member.ToString());
+            }
+
+            return sb.ToString();
+        }
     }
 }

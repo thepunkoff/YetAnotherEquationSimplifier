@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Yet_Another_Simplifier.Tokens;
@@ -15,18 +14,19 @@ namespace Yet_Another_Simplifier
 
         private Precedence LastPrecedence { get; set; }
         private char LastCharacter { get; set; }
-
         public Parser(string input)
         {
             Input = input;
             Pointer = -1;
-            LastPrecedence = Precedence.Add;
+            LastPrecedence = Precedence.Default;
         }
 
         private Stack<char> _parenthesesStack = new Stack<char>();
 
         private Stack<Token> _expressionStack = new Stack<Token>();
         private Stack<Token> _operationStack = new Stack<Token>();
+
+        private bool NegateFlag { get; set; }
 
         public Token ParseAndSimplify()
         {
@@ -41,7 +41,6 @@ namespace Yet_Another_Simplifier
                     Console.WriteLine(result.ErrorMessage);
                     return null;
                 }
-
                 if (ParseEqualSign())
                 {
                     return UnwindStacks();
@@ -53,27 +52,25 @@ namespace Yet_Another_Simplifier
                         if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]")|| LastCharacter == Const.RightParenthesis)
                         {
                             _operationStack.Push(new BinaryOperationToken { Value = "*"});
+                            LastPrecedence = Precedence.Multiply;
                         }
 
                         _parenthesesStack.Push(Input[Pointer]);
 
                         LastCharacter = Input[Pointer];
+                        LastPrecedence = Precedence.Default;
 
                         return ParseAndSimplify();
                     }
                     else if (Input[Pointer] == Const.RightParenthesis)
                     {
-                        if (_parenthesesStack.Peek() == Const.LeftParenthesis)
+                        _parenthesesStack.Push(Input[Pointer]);
+
+                        LastPrecedence = Precedence.Default;
+
+                        if (UnwindLastParentheses())
                         {
-                            _parenthesesStack.Pop();
-                            if (TryEvaluateLastBinaryOperation())
-                            {
-                                return ParseAndSimplify();
-                            }
-                            else
-                            {
-                                return null;
-                            }
+                            return ParseAndSimplify();
                         }
 
                         throw new Exception("Something's wrong with the parenteses stack. Take a look!");
@@ -83,36 +80,79 @@ namespace Yet_Another_Simplifier
                         throw new Exception("Wrong parenthesis token. Check Const class.");
                     }
                 }
+                else if (ParseUnaryMinus())
+                {
+                    NegateFlag = true;
+                    return ParseAndSimplify();
+                }
                 else if (ParseBinarySign())
                 {
-                    var precedence = GetPrecedence();
-
-                    if (precedence < LastPrecedence)
+                    if (_parenthesesStack.Count > 0)
                     {
-                        LastPrecedence = precedence;
-                        return BinaryProceed();
+                        if (_parenthesesStack.Count == 1)
+                        {
+                            _parenthesesStack.Push(Input[Pointer]);
+
+                            _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+
+                            LastPrecedence = GetPrecedence();
+
+                            return ParseAndSimplify();
+                        }
+                        if (_parenthesesStack.Count >= 2)
+                        {
+                            return CheckPrecedenceAndAssociativity();
+                        }
                     }
+                    else
+                    {
+                        if (LastPrecedence == Precedence.Default)
+                        {
+                            _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
 
-                    LastPrecedence = precedence;
+                            LastPrecedence = GetPrecedence();
 
-                    _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
-                    return ParseAndSimplify();
+                            return ParseAndSimplify();
+                        }
+                        else
+                        {
+                            return CheckPrecedenceAndAssociativity();
+                        }
+                    }
                 }
                 else if (TryParseVariable())
                 {
                     if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]") || LastCharacter == Const.RightParenthesis)
                     {
                         _operationStack.Push(new BinaryOperationToken { Value = "*" });
+                        LastPrecedence = Precedence.Multiply;
                     }
 
                     LastCharacter = Input[Pointer];
+                    var token = new VariableToken(1, new List<Variable> { new Variable { Letter = Input[Pointer], Exponent = 1 } });
 
-                    _expressionStack.Push(new VariableToken(1, new List<Variable> { new Variable { Letter = Input[Pointer], Exponent = 1 } }));
+                    if (NegateFlag && _parenthesesStack.Count == 0)
+                    {
+                        token.NegateValue();
+                        NegateFlag = false;
+                    }
+
+                    _expressionStack.Push(token);
                     return ParseAndSimplify();
                 }
                 else if (TryParseConstant(out string value))
                 {
-                    _expressionStack.Push(new ConstantToken(double.Parse(value)));
+                    var parsedDouble = double.Parse(value);
+
+                    var token = new ConstantToken(parsedDouble);
+
+                    if (NegateFlag && _parenthesesStack.Count == 0)
+                    {
+                        token.NegateValue();
+                        NegateFlag = false;
+                    }
+
+                    _expressionStack.Push(token);
                     return ParseAndSimplify();
                 }
                 else
@@ -123,6 +163,59 @@ namespace Yet_Another_Simplifier
             }
 
             return UnwindStacks();
+        }
+
+        private Token CheckPrecedenceAndAssociativity()
+        {
+            var precedence = GetPrecedence();
+
+            if (precedence > LastPrecedence)
+            {
+                LastPrecedence = precedence;
+
+                _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+                return ParseAndSimplify();
+            }
+            else if (precedence < LastPrecedence)
+            {
+                LastPrecedence = precedence;
+                return BinaryProceed();
+            }
+            else
+            {
+                if (GetAssociativity() == Associativity.Left)
+                {
+                    LastPrecedence = precedence;
+                    return BinaryProceed();
+                }
+                else
+                {
+                    LastPrecedence = precedence;
+
+                    _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+                    return ParseAndSimplify();
+                }
+            }
+        }
+
+        private bool UnwindLastParentheses()
+        {
+            while(_parenthesesStack.Peek() != Const.LeftParenthesis)
+            {
+                if (_parenthesesStack.Pop() == Const.RightParenthesis)
+                {
+                    continue;
+                }
+
+                if (!TryEvaluateLastBinaryOperation())
+                {
+                    return false;
+                }
+            }
+
+            _parenthesesStack.Pop();
+
+            return true;
         }
 
         private Precedence GetPrecedence()
@@ -153,11 +246,45 @@ namespace Yet_Another_Simplifier
             }
         }
 
+        private Associativity GetAssociativity()
+        {
+            if (Input[Pointer] == Const.Add)
+            {
+                return Associativity.Left;
+            }
+            else if (Input[Pointer] == Const.Subtract)
+            {
+                return Associativity.Left;
+            }
+            else if (Input[Pointer] == Const.Multiply)
+            {
+                return Associativity.Left;
+            }
+            else if (Input[Pointer] == Const.Divide)
+            {
+                return Associativity.Left;
+            }
+            else if (Input[Pointer] == Const.Exponentiate)
+            {
+                return Associativity.Right;
+            }
+            else
+            {
+                throw new Exception("Wrong binary sign token. Check Const class.");
+            }
+        }
+
         private Token BinaryProceed()
         {
             if (TryEvaluateLastBinaryOperation())
             {
                 _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+
+                //if (_parenthesesStack.Count > 0)
+                //{
+                //    _parenthesesStack.Push(Input[Pointer]);
+                //}
+
                 return ParseAndSimplify();
             }
             else
@@ -178,6 +305,12 @@ namespace Yet_Another_Simplifier
             var left  = _expressionStack.Pop();
 
             var simplifiedResult = Simplifier.DoOperation(_operationStack.Pop(), left, right);
+
+            if (simplifiedResult == null)
+            {
+                return false;
+            }
+
             _expressionStack.Push(simplifiedResult);
 
             return true;
@@ -233,19 +366,21 @@ namespace Yet_Another_Simplifier
         {
             var sb = new StringBuilder();
 
-            if (!CanStillBeValue(Input[Pointer]))
+            if (!IsDigit(Input[Pointer]))
             {
                 value = null;
                 return false;
             }
 
-            while (CanStillBeValue(Input[Pointer]))
+            while (IsDigit(Input[Pointer]))
             {
                 sb.Append(Input[Pointer]);
 
                 if (Pointer + 1 >= Input.Length)
                 {
                     value =  sb.ToString().TrimStart('0');
+
+                    return true;
                 }
                 else
                 {
@@ -262,14 +397,26 @@ namespace Yet_Another_Simplifier
             return true;
         }
 
-        private bool CanStillBeValue(char input)
+        private bool IsDigit(char input)
         {
             return Const.Digits.Contains(input);
         }
 
+        private bool ParseUnaryMinus()
+        {
+            if (Input[Pointer] == Const.Subtract && "\0=(".Contains(LastCharacter))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private bool ParseBinarySign()
         {
-            if (Const.BinarySigns.Contains(Input[Pointer]))
+            if (Const.ExclusivelyBinarySigns.Contains(Input[Pointer]) || Input[Pointer] == Const.Subtract)
             {
                 LastCharacter = Input[Pointer];
 

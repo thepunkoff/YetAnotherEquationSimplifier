@@ -1,4 +1,5 @@
 ﻿using System;
+using Yet_Another_Simplifier.Extensions;
 
 namespace Yet_Another_Simplifier
 {
@@ -19,7 +20,9 @@ namespace Yet_Another_Simplifier
                     continue;
                 }
 
-                Console.WriteLine(output.ToString());
+                var result = output.ToString().BeautifyExpression();
+
+                Console.WriteLine(result);
             }
         }
     }
