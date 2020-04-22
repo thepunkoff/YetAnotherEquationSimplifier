@@ -198,10 +198,10 @@ namespace Yet_Another_Simplifier
         {
             var precedence = GetPrecedence(Input[Pointer]);
 
-            if (_parenthesesStack.Count >= 1)
-            {
-                _parenthesesStack.Push(Input[Pointer]);
-            }
+            //if (_parenthesesStack.Count >= 1)
+            //{
+            //    _parenthesesStack.Push(Input[Pointer]);
+            //}
 
             if (precedence > LastPrecedence)
             {
@@ -315,10 +315,10 @@ namespace Yet_Another_Simplifier
             {
                 //_operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
 
-                //if (_parenthesesStack.Count > 0)
-                //{
-                //    _parenthesesStack.Push(Input[Pointer]);
-                //}
+                if (_parenthesesStack.Count > 1)
+                {
+                    _parenthesesStack.Pop();
+                }
 
                 Pointer--;
 
