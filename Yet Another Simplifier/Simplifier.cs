@@ -296,11 +296,17 @@ namespace Yet_Another_Simplifier
                         {
                             newVars.Add(new Variable(leftVar.Letter, leftVar.Exponent += rightVar.Exponent));
                         }
-                        else
-                        {
-                            newVars.Add(leftVar);
-                            newVars.Add(rightVar);
-                        }
+                    }
+                }
+
+                var concat = ((VariableToken)left).Variables.Concat(((VariableToken)right).Variables);
+
+                foreach (var variable in concat)
+                {
+                    var newLetters = newVars.Select(x => x.Letter);
+                    if (!newLetters.Contains(variable.Letter))
+                    {
+                        newVars.Add(new Variable(variable.Letter, variable.Exponent));
                     }
                 }
 
