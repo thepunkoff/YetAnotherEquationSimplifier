@@ -20,7 +20,7 @@ namespace Yet_Another_Simplifier
                     continue;
                 }
 
-                var result = output.ToString().BeautifyExpression();
+                var result = output.ToString();
 
                 Console.WriteLine(result);
             }

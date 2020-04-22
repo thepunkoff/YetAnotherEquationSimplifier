@@ -7,9 +7,9 @@ namespace Yet_Another_Simplifier
     public struct Variable
     {
         public char Letter { get; set; }
-        public double Exponent { get; set; }
+        public decimal Exponent { get; set; }
 
-        public Variable(char letter, double exponent)
+        public Variable(char letter, decimal exponent)
         {
             Letter = letter;
             Exponent = exponent;

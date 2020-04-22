@@ -6,12 +6,12 @@ namespace Yet_Another_Simplifier.Tokens
 {
     public class ConstantToken : Token
     {
-        public ConstantToken(double numericValue)
+        public ConstantToken(decimal numericValue)
         {
             NumericValue = numericValue;
         }
 
-        public double NumericValue { get; set; }
+        public decimal NumericValue { get; set; }
 
         public override void NegateValue()
         {

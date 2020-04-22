@@ -457,7 +457,9 @@ namespace Yet_Another_Simplifier
             {
                 var power = ((ConstantToken)right).NumericValue;
 
-                ((ConstantToken)left).NumericValue = Math.Pow(((ConstantToken)left).NumericValue, power);
+                var numericValue = ((ConstantToken)left).NumericValue;
+
+                ((ConstantToken)left).NumericValue = (decimal)Math.Pow((double)numericValue, (double)power);
             }
 
             if (left is ConstantToken && right is VariableToken)
@@ -471,7 +473,9 @@ namespace Yet_Another_Simplifier
             {
                 var power = ((ConstantToken)right).NumericValue;
 
-                var newQuotient = Math.Pow(((VariableToken)left).Quotient, power);
+                var quotient = ((VariableToken)left).Quotient;
+
+                var newQuotient = (decimal)Math.Pow((double)quotient, (double)power);
 
                 var newVars = new List<Variable>(((VariableToken)left).Variables).ToArray();
 

@@ -21,5 +21,7 @@ namespace Yet_Another_Simplifier
         public static char Equal = '=';
 
         public static string Digits = "1234567890";
+
+        public static char Point = '.';
     }
 }

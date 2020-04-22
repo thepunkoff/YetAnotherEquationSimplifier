@@ -20,6 +20,14 @@ namespace Yet_Another_Simplifier
             preceding = GetType(preceding);
             current = GetType(current);
 
+            if ((current == 'p' && preceding != 'c') || (preceding == 'p' && current != 'c'))
+            {
+                return new SyntaxCheckResult
+                {
+                    ErrorMessage = "Invalid syntax: point sign can go only after or before a digit"
+                };
+            }
+
             if (current == Const.Subtract && "=(".Contains(preceding))
             {
                 return new SyntaxCheckResult

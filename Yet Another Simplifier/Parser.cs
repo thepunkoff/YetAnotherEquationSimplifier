@@ -171,9 +171,9 @@ namespace Yet_Another_Simplifier
                 }
                 else if (TryParseConstant(out string value))
                 {
-                    var parsedDouble = double.Parse(value);
+                    var parsedDecimal = decimal.Parse(value);
 
-                    var token = new ConstantToken(parsedDouble);
+                    var token = new ConstantToken(parsedDecimal);
 
                     if (NegateFlag && _parenthesesStack.Count == 0)
                     {
@@ -193,7 +193,6 @@ namespace Yet_Another_Simplifier
 
             return UnwindStacks();
         }
-
         private Token CheckPrecedenceAndAssociativity()
         {
             var precedence = GetPrecedence(Input[Pointer]);
@@ -405,13 +404,13 @@ namespace Yet_Another_Simplifier
         {
             var sb = new StringBuilder();
 
-            if (!IsDigit(Input[Pointer]))
+            if (!Const.Digits.Contains(Input[Pointer]))
             {
                 value = null;
                 return false;
             }
 
-            while (IsDigit(Input[Pointer]))
+            while (Const.Digits.Contains(Input[Pointer]) || Input[Pointer] == Const.Point)
             {
                 sb.Append(Input[Pointer]);
 
@@ -434,11 +433,6 @@ namespace Yet_Another_Simplifier
             value = sb.ToString().TrimStart('0');
 
             return true;
-        }
-
-        private bool IsDigit(char input)
-        {
-            return Const.Digits.Contains(input);
         }
 
         private bool ParseUnaryMinus()
