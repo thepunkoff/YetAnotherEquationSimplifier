@@ -32,7 +32,7 @@ namespace Yet_Another_Simplifier.Tokens
 
             foreach (var member in Members)
             {
-                sb.Append(member.ToString());
+                sb.Append($"({member.ToString()})");
             }
 
             return sb.ToString();

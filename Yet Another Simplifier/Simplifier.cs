@@ -317,7 +317,7 @@ namespace Yet_Another_Simplifier
             {
                 var list = new List<Token>();
 
-                foreach (var member in ((ExpressionToken)right).Members)
+                foreach (var member in ((ExpressionToken)right).Members.Where(x => !(x is BinaryOperationToken)))
                 {
                     var token = Multiply(left,  member);
                     list.Add(token);
@@ -343,7 +343,7 @@ namespace Yet_Another_Simplifier
             {
                 var list = new List<Token>();
 
-                foreach (var member in ((ExpressionToken)right).Members)
+                foreach (var member in ((ExpressionToken)right).Members.Where(x => !(x is BinaryOperationToken)))
                 {
                     var token = Multiply(left, member);
                     list.Add(token);

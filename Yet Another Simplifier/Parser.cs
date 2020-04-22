@@ -12,13 +12,38 @@ namespace Yet_Another_Simplifier
         private int Pointer { get; set; }
         
 
-        private Precedence LastPrecedence { get; set; }
+        private Precedence LastPrecedence { get
+            {
+                if (_parenthesesStack.Count == 0)
+                {
+                    if (_operationStack.Count != 0)
+                    {
+                        return GetPrecedence(_operationStack.Peek().Value[0]);
+                    }
+                    else
+                    {
+                        return Precedence.Default;
+                    }
+                }
+                else
+                {
+                    if (_parenthesesStack.Count == 1)
+                    {
+                        return Precedence.Default;
+                    }
+                    else
+                    {
+                        return GetPrecedence(_parenthesesStack.Peek());
+                    }
+                }
+
+            }
+            set { } }
         private char LastCharacter { get; set; }
         public Parser(string input)
         {
             Input = input;
             Pointer = -1;
-            LastPrecedence = Precedence.Default;
         }
 
         private Stack<char> _parenthesesStack = new Stack<char>();
@@ -52,13 +77,13 @@ namespace Yet_Another_Simplifier
                         if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]")|| LastCharacter == Const.RightParenthesis)
                         {
                             _operationStack.Push(new BinaryOperationToken { Value = "*"});
-                            LastPrecedence = Precedence.Multiply;
+                            //LastPrecedence = Precedence.Multiply;
                         }
 
                         _parenthesesStack.Push(Input[Pointer]);
 
                         LastCharacter = Input[Pointer];
-                        LastPrecedence = Precedence.Default;
+                        //LastPrecedence = Precedence.Default;
 
                         return ParseAndSimplify();
                     }
@@ -66,7 +91,7 @@ namespace Yet_Another_Simplifier
                     {
                         _parenthesesStack.Push(Input[Pointer]);
 
-                        LastPrecedence = GetPrecedence(_operationStack.Peek().Value[0]);
+                        //LastPrecedence = GetPrecedence(_operationStack.Peek().Value[0]);
 
                         if (UnwindLastParentheses())
                         {
@@ -95,7 +120,7 @@ namespace Yet_Another_Simplifier
 
                             _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
 
-                            LastPrecedence = GetPrecedence(Input[Pointer]);
+                            //LastPrecedence = GetPrecedence(Input[Pointer]);
 
                             return ParseAndSimplify();
                         }
@@ -110,7 +135,7 @@ namespace Yet_Another_Simplifier
                         {
                             _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
 
-                            LastPrecedence = GetPrecedence(Input[Pointer]);
+                            //LastPrecedence = GetPrecedence(Input[Pointer]);
 
                             return ParseAndSimplify();
                         }
@@ -129,7 +154,7 @@ namespace Yet_Another_Simplifier
                         {
                             _parenthesesStack.Push('*');
                         }
-                        LastPrecedence = Precedence.Multiply;
+                        //LastPrecedence = Precedence.Multiply;
                     }
 
                     LastCharacter = Input[Pointer];
@@ -182,25 +207,25 @@ namespace Yet_Another_Simplifier
             {
                 _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
 
-                LastPrecedence = precedence;
+                //LastPrecedence = precedence;
 
                 return ParseAndSimplify();
             }
             else if (precedence < LastPrecedence)
             {
-                LastPrecedence = precedence;
+                //LastPrecedence = precedence;
                 return BinaryProceed();
             }
             else
             {
                 if (GetAssociativity() == Associativity.Left)
                 {
-                    LastPrecedence = precedence;
+                    //LastPrecedence = precedence;
                     return BinaryProceed();
                 }
                 else
                 {
-                    LastPrecedence = precedence;
+                    //LastPrecedence = precedence;
 
                     _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
                     return ParseAndSimplify();
