@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Yet_Another_Simplifier.Tokens
 {
@@ -32,10 +33,16 @@ namespace Yet_Another_Simplifier.Tokens
 
             foreach (var member in Members)
             {
-                sb.Append($"({member.ToString()})");
+                sb.Append($"{member.ToString()}");
             }
 
-            return sb.ToString();
+            var result = sb.ToString();
+
+            result = Regex.Replace(result, @"\+-", "-");
+            //result = Regex.Replace(result, @"[\+-]0", string.Empty);
+            //result = Regex.Replace(result, @"[\+-]0[a-z]?", string.Empty);
+
+            return result;
         }
     }
 }

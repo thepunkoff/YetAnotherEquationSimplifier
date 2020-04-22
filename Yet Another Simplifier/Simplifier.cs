@@ -14,13 +14,65 @@ namespace Yet_Another_Simplifier
                 throw new Exception("Invalid token passed as operation into simplification");
             }
 
-            if (operation.Value == Const.Add.ToString()) return Add(leftOperand, rightOperand);
-            if (operation.Value == Const.Subtract.ToString()) return Subtract(leftOperand, rightOperand);
-            if (operation.Value == Const.Multiply.ToString()) return Multiply(leftOperand, rightOperand);
-            if (operation.Value == Const.Divide.ToString()) return Divide(leftOperand, rightOperand);
-            if (operation.Value == Const.Exponentiate.ToString()) return Exponentiate(leftOperand, rightOperand);
+            Token result = null;
+
+            if (operation.Value == Const.Add.ToString()) result = Add(leftOperand, rightOperand);
+            if (operation.Value == Const.Subtract.ToString()) result = Subtract(leftOperand, rightOperand);
+            if (operation.Value == Const.Multiply.ToString()) result = Multiply(leftOperand, rightOperand);
+            if (operation.Value == Const.Divide.ToString()) result = Divide(leftOperand, rightOperand);
+            if (operation.Value == Const.Exponentiate.ToString()) result = Exponentiate(leftOperand, rightOperand);
+
+            if (result != null)
+            {
+                if (result is VariableToken vToken)
+                {
+                    if (vToken.Quotient == 0)
+                    {
+                        return new ConstantToken(0);
+                    }
+                }
+                if (result is ExpressionToken exToken)
+                {
+                    foreach (var memer in exToken.Members.ToList())
+                    {
+                        if (memer is ConstantToken c && c.NumericValue == 0)
+                        {
+                            DeleteFromExpression(c, exToken);
+                        }
+
+                        if (memer is VariableToken v && v.Quotient == 0)
+                        {
+                            DeleteFromExpression(v, exToken);
+                        }
+                    }
+
+                    if (exToken.Members.Count == 1)
+                    {
+                        return exToken.Members[0];
+                    }
+                }
+
+                return result;
+            }
 
             throw new Exception("Unknown operation value in token.");
+        }
+
+        private static void DeleteFromExpression(Token t, ExpressionToken ex)
+        {
+            if (ex.Members.IndexOf(t) == 0)
+            {
+                ex.Members.RemoveAt(0);
+                ex.Members.RemoveAt(0);
+            }
+            else
+            {
+                var index = ex.Members.IndexOf(t) - 1;
+
+                ex.Members.RemoveAt(index);
+                ex.Members.RemoveAt(index);
+            }
+
         }
 
         private static Token Add(Token left, Token right)

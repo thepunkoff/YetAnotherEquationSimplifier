@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Yet_Another_Simplifier.Tokens
 {
@@ -24,14 +26,29 @@ namespace Yet_Another_Simplifier.Tokens
         {
             var sb = new StringBuilder();
 
-            sb.Append(Quotient == 1 ? string.Empty : Quotient.ToString());
+            if (Quotient == 1)
+            {
+                sb.Append(string.Empty);
+            }
+            else if (Quotient == -1)
+            {
+                sb.Append("-");
+            }
+            else
+            {
+                sb.Append(Quotient.ToString());
+            }
+
+            Variables = Variables.OrderBy(x => x.Letter).ToList();
 
             foreach (var variable in Variables)
             {
                 sb.Append(variable.ToString());
             }
 
-            return sb.ToString();
+            var result = sb.ToString();
+
+            return result;
         }
     }
 }

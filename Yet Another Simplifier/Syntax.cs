@@ -36,7 +36,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'v' && "vr".Contains(preceding))
+            if (current == 'v' && "r".Contains(preceding))
             {
                 return new SyntaxCheckResult
                 {

@@ -313,12 +313,16 @@ namespace Yet_Another_Simplifier
         {
             if (TryEvaluateLastBinaryOperation())
             {
-                _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+                //_operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
 
                 //if (_parenthesesStack.Count > 0)
                 //{
                 //    _parenthesesStack.Push(Input[Pointer]);
                 //}
+
+                Pointer--;
+
+                LastCharacter = Input[Pointer];
 
                 return ParseAndSimplify();
             }
