@@ -246,7 +246,7 @@ namespace Yet_Another_Simplifier
         {
             Token result = tokens[0];
 
-            for (int i = 1; i < tokens.Count - 1; i++)
+            for (int i = 1; i < tokens.Count; i++)
             {
                 result = Add(result, tokens[i]);
             }
@@ -282,7 +282,7 @@ namespace Yet_Another_Simplifier
             {
                 var newQuotient = ((VariableToken)left).Quotient * ((VariableToken)right).Quotient;
 
-                var newVars = new List<Variable>(((VariableToken)left).Variables).ToArray();
+                var newVars = new List<Variable>();
 
                 for (int i = 0; i < ((VariableToken)left).Variables.Count; i++)
                 {
@@ -294,7 +294,12 @@ namespace Yet_Another_Simplifier
 
                         if (leftVar.Letter == rightVar.Letter)
                         {
-                            newVars[i].Exponent += rightVar.Exponent;
+                            newVars.Add(new Variable(leftVar.Letter, leftVar.Exponent += rightVar.Exponent));
+                        }
+                        else
+                        {
+                            newVars.Add(leftVar);
+                            newVars.Add(rightVar);
                         }
                     }
                 }
@@ -360,8 +365,18 @@ namespace Yet_Another_Simplifier
 
                 foreach (var leftMember in ((ExpressionToken)left).Members)
                 {
+                    if (leftMember is BinaryOperationToken)
+                    {
+                        continue;
+                    }
+
                     foreach (var rightMember in ((ExpressionToken)right).Members)
                     {
+                        if (rightMember is BinaryOperationToken)
+                        {
+                            continue;
+                        }
+
                         var result = Multiply(leftMember, rightMember);
                         list.Add(result);
                     }
@@ -426,48 +441,14 @@ namespace Yet_Another_Simplifier
 
             if (left is ExpressionToken && right is ConstantToken)
             {
-                var power = ((ConstantToken)right).NumericValue;
+                Token result = (ExpressionToken)left;
 
-                if ((power - (int)power) != 0)
+                for (int i = 0; i < ((ConstantToken)right).NumericValue - 1; i++)
                 {
-                    Console.WriteLine("Binominal exponents (power 2) are only supported.");
-
-                    return null;
+                    result = Multiply(result, (ExpressionToken)left);
                 }
 
-                var count = ((ExpressionToken)left).Members
-                    .Where(x => !(x is BinaryOperationToken))
-                    .Count();
-
-                if (count > 2)
-                {
-                    Console.WriteLine("Binominal exponents (power 2) are only supported.");
-
-                    return null;
-                }
-
-                if (count == 1)
-                {
-                    return Exponentiate(((ExpressionToken)left).Members[0], new ConstantToken((int)power));
-                }
-                if (count == 2)
-                {
-                    var a = ((ExpressionToken)left).Members[0];
-                    var b = ((ExpressionToken)left).Members[2];
-
-                    return AddMultiple(new List<Token>
-                    { 
-                        Multiply(Multiply(a, b), new ConstantToken(2)),
-                        Exponentiate(a, new ConstantToken(2)),
-                        Exponentiate(b, new ConstantToken(2))
-                    });
-                }
-                else
-                {
-                    Console.WriteLine("Binominal exponents (power 2) are only supported.");
-
-                    return null;
-                }
+                return result;
             }
 
             if (left is VariableToken && right is ExpressionToken)
