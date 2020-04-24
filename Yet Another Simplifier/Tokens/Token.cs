@@ -8,6 +8,10 @@ namespace Yet_Another_Simplifier.Tokens
     {
         public string Value { get; set; }
 
+        public abstract Token Clone();
+
         public abstract void NegateValue();
+
+        public abstract decimal GreatestCommonDivisor();
     }
 }

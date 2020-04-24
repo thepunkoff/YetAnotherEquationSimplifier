@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Yet_Another_Simplifier.Tokens
 {
-    public class ConstantToken : Token
+    public class ConstantToken : Token, IHasNumericValue
     {
         public ConstantToken(decimal numericValue)
         {
@@ -12,6 +12,16 @@ namespace Yet_Another_Simplifier.Tokens
         }
 
         public decimal NumericValue { get; set; }
+
+        public override Token Clone()
+        {
+            return new ConstantToken(NumericValue);
+        }
+
+        public override decimal GreatestCommonDivisor()
+        {
+            return NumericValue;
+        }
 
         public override void NegateValue()
         {

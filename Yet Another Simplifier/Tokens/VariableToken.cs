@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Yet_Another_Simplifier.Tokens
 {
-    public class VariableToken : Token
+    public class VariableToken : Token, IHasNumericValue
     {
         public VariableToken(decimal quotient, List<Variable> variables)
         {
@@ -16,12 +16,22 @@ namespace Yet_Another_Simplifier.Tokens
 
         public decimal Quotient { get; set; }
         public List<Variable> Variables { get; set; }
+        public decimal NumericValue { get => Quotient; set => Quotient = value; }
+
+        public decimal GetNumericValue()
+        {
+            return Quotient;
+        }
+
+        public void SetNumericValue(decimal value)
+        {
+            Quotient = value;
+        }
 
         public override void NegateValue()
         {
             Quotient *= -1;
         }
-
         public override string ToString()
         {
             var sb = new StringBuilder();
@@ -49,6 +59,16 @@ namespace Yet_Another_Simplifier.Tokens
             var result = sb.ToString();
 
             return result;
+        }
+
+        public override Token Clone()
+        {
+            return new VariableToken(Quotient, Variables);
+        }
+
+        public override decimal GreatestCommonDivisor()
+        {
+            return Quotient;
         }
     }
 }

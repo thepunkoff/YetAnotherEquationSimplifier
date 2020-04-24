@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -13,6 +14,23 @@ namespace Yet_Another_Simplifier.Tokens
         }
 
         public List<Token> Members { get; set; }
+
+        public override Token Clone()
+        {
+            var newMembers = new List<Token>();
+
+            foreach (var member in Members)
+            {
+                newMembers.Add(member.Clone());
+            }
+
+            return new ExpressionToken(newMembers);
+        }
+
+        public override decimal GreatestCommonDivisor()
+        {
+            return Utility.GreatestCommonDivisor(Members.Where(x => x is IHasNumericValue).Select(x => ((IHasNumericValue)x).NumericValue));
+        }
 
         public override void NegateValue()
         {

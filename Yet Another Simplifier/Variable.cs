@@ -23,5 +23,17 @@ namespace Yet_Another_Simplifier
 
             return $"{Letter}{exponent}";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Variable v))
+            {
+                return false;
+            }
+            else
+            {
+                return v.Exponent == Exponent && v.Letter == Letter;
+            }
+        }
     }
 }

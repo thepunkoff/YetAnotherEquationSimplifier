@@ -89,25 +89,6 @@ namespace Yet_Another_Simplifier
                 return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
             }
 
-            if (left is VariableToken && right is ConstantToken)
-            {
-                return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
-            }
-
-            if (left is VariableToken && right is VariableToken)
-            {
-                if (((VariableToken)left).Variables.Except(((VariableToken)right).Variables).Count() == 0)
-                {
-                    var token = new VariableToken(((VariableToken)left).Quotient + ((VariableToken)right).Quotient, ((VariableToken)left).Variables);
-                    
-                    return token;
-                }
-                else
-                {
-                    return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
-                }
-            }
-
             if (left is ConstantToken && right is ExpressionToken)
             {
                 var members = ((ExpressionToken)right).Members;
@@ -128,24 +109,28 @@ namespace Yet_Another_Simplifier
                 return newExpression;
             }
 
-            if (left is ExpressionToken && right is ConstantToken)
+            if (left is ConstantToken && right is FractionToken)
             {
-                var members = ((ExpressionToken)left).Members;
+                return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
+            }
 
-                var newExpression = new ExpressionToken(new List<Token>(members));
+            if (left is VariableToken && right is ConstantToken)
+            {
+                return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
+            }
 
-                if (members.Any(x => x is ConstantToken))
+            if (left is VariableToken && right is VariableToken)
+            {
+                if (((VariableToken)left).Variables.Except(((VariableToken)right).Variables).Count() == 0)
                 {
-                    var c = newExpression.Members.Where(x => x is ConstantToken).FirstOrDefault() as ConstantToken;
-
-                    c.NumericValue += ((ConstantToken)right).NumericValue;
+                    var token = new VariableToken(((VariableToken)left).Quotient + ((VariableToken)right).Quotient, ((VariableToken)left).Variables);
+                    
+                    return token;
                 }
                 else
                 {
-                    newExpression.Members.AddRange(new List<Token> { new BinaryOperationToken { Value = "+" }, right });
+                    return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
                 }
-
-                return newExpression;
             }
 
             if (left is VariableToken && right is ExpressionToken)
@@ -165,6 +150,31 @@ namespace Yet_Another_Simplifier
                 else
                 {
                     newExpression.Members.AddRange(new List<Token> { new BinaryOperationToken { Value = "+" }, left });
+                }
+
+                return newExpression;
+            }
+
+            if (left is VariableToken && right is FractionToken)
+            {
+                return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
+            }
+
+            if (left is ExpressionToken && right is ConstantToken)
+            {
+                var members = ((ExpressionToken)left).Members;
+
+                var newExpression = new ExpressionToken(new List<Token>(members));
+
+                if (members.Any(x => x is ConstantToken))
+                {
+                    var c = newExpression.Members.Where(x => x is ConstantToken).FirstOrDefault() as ConstantToken;
+
+                    c.NumericValue += ((ConstantToken)right).NumericValue;
+                }
+                else
+                {
+                    newExpression.Members.AddRange(new List<Token> { new BinaryOperationToken { Value = "+" }, right });
                 }
 
                 return newExpression;
@@ -194,100 +204,108 @@ namespace Yet_Another_Simplifier
 
             if (left is ExpressionToken && right is ExpressionToken)
             {
-                var finalList = new List<Token>();
-                var combinedList = new List<Token>();
+                var finalNoSigns = new List<Token>();
 
-                foreach (var element in ((ExpressionToken)left).Members)
+                var leftMembers = ((ExpressionToken)left).Members.Where(x => !(x is BinaryOperationToken));
+                var rightMembers = ((ExpressionToken)right).Members.Where(x => !(x is BinaryOperationToken));
+
+                foreach (var l in leftMembers)
                 {
-                    if (element is BinaryOperationToken)
-                    {
-                        continue;
-                    }
+                    var found = false;
 
-                    if (element is VariableToken var)
+                    foreach (var r in rightMembers)
                     {
-                        if (((ExpressionToken)right).Members.Any(x => x is VariableToken v && v.Variables == var.Variables))
+                        if (l is VariableToken lV && r is VariableToken rV)
                         {
-                            var tokenWithSimilarVariables = ((ExpressionToken)right).Members
-                                .Where(x => x is VariableToken v && v.Variables == var.Variables)
-                                .FirstOrDefault() as VariableToken;
+                            if (lV.Variables.SequenceEqual(rV.Variables))
+                            {
+                                finalNoSigns.Add(Add(lV, rV));
+                                found = true;
+                                break;
+                            }
+                        }
 
-                            var token = new VariableToken(var.Quotient + tokenWithSimilarVariables.Quotient, var.Variables);
-                            combinedList.Add(token);
+                        if (l is ConstantToken lC && r is ConstantToken rC)
+                        {
+                            finalNoSigns.Add(Add(lC, rC));
+                            found = true;
+                            break;
                         }
                     }
 
-                    if (element is ConstantToken con)
+                    if (!found)
                     {
-                        if (((ExpressionToken)right).Members.Any(x => x is ConstantToken))
-                        {
-                            var rightConstantToken = ((ExpressionToken)right).Members
-                                .Where(x => x is ConstantToken)
-                                .FirstOrDefault() as ConstantToken;
+                        finalNoSigns.Add(l);
+                    }
+                }
 
-                            var token = new ConstantToken(con.NumericValue + rightConstantToken.NumericValue);
-                            combinedList.Add(token);
+                foreach (var r in rightMembers)
+                {
+                    if (r is VariableToken rV)
+                    {
+                        var allVars = finalNoSigns.Where(x => x is VariableToken).Select(x => ((VariableToken)x).Variables);
+
+                        if (!allVars.Any(x => x.Except(rV.Variables).Count() == 0))
+                        {
+                            finalNoSigns.Add(r);
+                        }
+                    }
+
+                    if (r is ConstantToken rC)
+                    {
+                        if (!finalNoSigns.Any(x => x is ConstantToken))
+                        {
+                            finalNoSigns.Add(r);
                         }
                     }
                 }
 
-                var union = new ExpressionToken(new List<Token>(((ExpressionToken)left).Members.Concat(((ExpressionToken)right).Members)));
-
-                if (combinedList.Count == 0)
+                var finalWithSigns = new List<Token>();
+                
+                foreach (var t in finalNoSigns)
                 {
-                    return union;
+                    finalWithSigns.Add(t);
+                    
+                    if (finalNoSigns.IndexOf(t) != finalNoSigns.Count - 1)
+                    {
+                        finalWithSigns.Add(new BinaryOperationToken { Value = "+" });
+                    }
+                }
+
+                return new ExpressionToken(finalWithSigns);
+            }
+
+            if (left is ExpressionToken && right is FractionToken)
+            {
+                return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
+            }
+
+            if (left is FractionToken && right is ConstantToken)
+            {
+                return Add(right, left);
+            }
+
+            if (left is FractionToken && right is VariableToken)
+            {
+                return Add(right, left);
+            }
+
+            if (left is FractionToken && right is ExpressionToken)
+            {
+                return Add(right, left);
+            }
+
+            if (left is FractionToken && right is FractionToken)
+            {
+                if (((FractionToken)left).Denominator.ToString() == ((FractionToken)right).Denominator.ToString())
+                {
+                    var newNum = Add(((FractionToken)left).Numerator, ((FractionToken)right).Numerator);
+                    var newDenom = ((FractionToken)left).Denominator.Clone();
+                    return new FractionToken(newNum, newDenom);
                 }
                 else
                 {
-                    foreach (var member in combinedList)
-                    {
-                        if (member is BinaryOperationToken)
-                        {
-                            continue;
-                        }
-
-                        if (member is ConstantToken)
-                        {
-                            foreach (var unionMember in union.Members)
-                            {
-                                if (unionMember is ConstantToken)
-                                {
-                                    continue;
-                                }
-                                else
-                                {
-                                    finalList.Add(new ExpressionToken(new List<Token> { new BinaryOperationToken { Value = "+" }, unionMember }));
-                                }
-                            }
-                        }
-
-                        if (member is VariableToken vM)
-                        {
-                            foreach (var unionMember in union.Members)
-                            {
-                                if (unionMember is VariableToken vU)
-                                {
-                                    if (vM.Variables == vU.Variables)
-                                    {
-                                        continue;
-                                    }
-                                    else
-                                    {
-                                        finalList.Add(new ExpressionToken(new List<Token>{ new BinaryOperationToken { Value = "+" }, unionMember }));
-                                    }
-                                }
-                            }
-                        }
-
-                        foreach (var combinedMember in combinedList)
-                        {
-                            finalList.Add(new ExpressionToken(new List<Token> { new BinaryOperationToken { Value = "+" }, combinedMember }));
-                        }
-                    }
-
-                    var finalToken = new ExpressionToken(finalList);
-
-                    return finalToken;
+                    return new ExpressionToken(new List<Token> { left, new BinaryOperationToken { Value = "+" }, right });
                 }
             }
 
@@ -296,14 +314,7 @@ namespace Yet_Another_Simplifier
 
         private static Token AddMultiple(List<Token> tokens)
         {
-            Token result = tokens[0];
-
-            for (int i = 1; i < tokens.Count; i++)
-            {
-                result = Add(result, tokens[i]);
-            }
-
-            return result;
+            return tokens.Aggregate((a, b) => Add(a, b));
         }
 
 
@@ -323,6 +334,34 @@ namespace Yet_Another_Simplifier
             if (left is ConstantToken && right is VariableToken)
             {
                 return new VariableToken(((VariableToken)right).Quotient * ((ConstantToken)left).NumericValue, ((VariableToken)right).Variables);
+            }
+
+            if (left is ConstantToken && right is ExpressionToken)
+            {
+                var list = new List<Token>();
+
+                foreach (var member in ((ExpressionToken)right).Members.Where(x => !(x is BinaryOperationToken)))
+                {
+                    var token = Multiply(left, member);
+                    list.Add(token);
+                }
+
+                return AddMultiple(list);
+            }
+
+            if (left is ConstantToken && right is FractionToken)
+            {               
+                var newNum = Multiply(new ConstantToken(((ConstantToken)left).NumericValue), ((FractionToken)right).Numerator);
+                var newDenom = ((FractionToken)right).Denominator.Clone();
+
+                var newFraction = new FractionToken(newNum, newDenom);
+
+                var gcd = newFraction.GreatestCommonDivisor();
+
+                newNum = Divide(newNum, new ConstantToken(gcd));
+                newDenom = Divide(newDenom, new ConstantToken(gcd));
+
+                return new FractionToken(newNum, newDenom);
             }
 
             if (left is VariableToken && right is ConstantToken)
@@ -365,32 +404,6 @@ namespace Yet_Another_Simplifier
                 return new VariableToken(newQuotient, newVars.ToList());
             }
 
-            if (left is ConstantToken && right is ExpressionToken)
-            {
-                var list = new List<Token>();
-
-                foreach (var member in ((ExpressionToken)right).Members.Where(x => !(x is BinaryOperationToken)))
-                {
-                    var token = Multiply(left,  member);
-                    list.Add(token);
-                }
-
-                return AddMultiple(list);
-            }
-
-            if (left is ExpressionToken && right is ConstantToken)
-            {
-                var list = new List<Token>();
-
-                foreach (var member in ((ExpressionToken)left).Members)
-                {
-                    var token = Multiply(right, member);
-                    list.Add(token);
-                }
-
-                return AddMultiple(list);
-            }
-
             if (left is VariableToken && right is ExpressionToken)
             {
                 var list = new List<Token>();
@@ -403,6 +416,34 @@ namespace Yet_Another_Simplifier
 
                 return AddMultiple(list);
             }
+
+            if (left is VariableToken && right is FractionToken)
+            {
+                var newNum = Multiply(new VariableToken(((VariableToken)left).Quotient, ((VariableToken)left).Variables), ((FractionToken)right).Numerator);
+                var newDenom = ((FractionToken)right).Denominator.Clone();
+
+                return new FractionToken(newNum, newDenom);
+            }
+
+            if (left is ExpressionToken && right is ConstantToken)
+            {
+                var list = new List<Token>();
+
+                foreach (var member in ((ExpressionToken)left).Members)
+                {
+                    if (member is BinaryOperationToken)
+                    {
+                        continue;
+                    }
+
+                    var token = Multiply(right, member);
+                    list.Add(token);
+                }
+
+                return AddMultiple(list);
+            }
+
+            
 
             if (left is ExpressionToken && right is VariableToken)
             {
@@ -443,12 +484,92 @@ namespace Yet_Another_Simplifier
                 return AddMultiple(list);
             }
 
+            if (left is ExpressionToken && right is FractionToken)
+            {
+                var newNum = Multiply(new ExpressionToken(new List<Token>(((ExpressionToken)left).Members)), ((FractionToken)right).Numerator);
+                var newDenom = ((FractionToken)right).Denominator.Clone();
+
+                return new FractionToken(newNum, newDenom);
+            }
+
+            if (left is FractionToken && right is ConstantToken)
+            {
+                return Multiply(right, left);
+            }
+
+            if (left is FractionToken && right is VariableToken)
+            {
+                return Multiply(right, left);
+            }
+
+            if (left is FractionToken && right is ExpressionToken)
+            {
+                return Multiply(right, left);
+            }
+
+            if (left is FractionToken && right is FractionToken)
+            {
+                var newNum = Multiply(((FractionToken)left).Numerator, ((FractionToken)right).Numerator);
+                var newDenom = Multiply(((FractionToken)left).Denominator, ((FractionToken)right).Denominator);
+
+                return new FractionToken(newNum, newDenom);
+            }
+
             throw new Exception("Unknown token pair for multiplication rule.");
         }
 
-        private static Token Divide(Token leftOperand, Token rightOperand)
+        private static Token Divide(Token left, Token right)
         {
-            throw new NotImplementedException();
+            if (left is ConstantToken && right is ConstantToken)
+            {
+                return new ConstantToken(((ConstantToken)left).NumericValue / ((ConstantToken)right).NumericValue);
+            }
+
+            if (left is ConstantToken && right is VariableToken)
+            {
+                var gcd = Utility.GreatestCommonDivisor(((ConstantToken)left).NumericValue, ((VariableToken)right).Quotient);
+
+                var newNum = new ConstantToken(((ConstantToken)left).NumericValue / gcd);
+                var newDenom = new VariableToken(((VariableToken)right).Quotient / gcd, new List<Variable>(((VariableToken)right).Variables));
+
+                return new FractionToken(newNum, newDenom);
+            }
+
+            if (left is ConstantToken && right is ExpressionToken)
+            {
+                var allTokens = new List<decimal>(((ExpressionToken)right).Members
+                    .Where(x => x is IHasNumericValue)
+                    .Select(x => ((IHasNumericValue)x).NumericValue));
+
+                allTokens.Add(((IHasNumericValue)left).NumericValue);
+
+                var gcd = Utility.GreatestCommonDivisor(allTokens);
+
+                var newConst = new ConstantToken(((ConstantToken)left).NumericValue / gcd);
+
+                var newExpr = new ExpressionToken(new List<Token>(((ExpressionToken)right).Members));
+                foreach (var member in newExpr.Members)
+                {
+                    if (member is BinaryOperationToken)
+                    {
+                        continue;
+                    }
+
+                    ((IHasNumericValue)member).NumericValue = ((IHasNumericValue)member).NumericValue / gcd; 
+                }
+
+                return new FractionToken(newConst, newExpr);
+            }
+
+            if (left is ConstantToken && right is FractionToken)
+            {
+                var newNum = Multiply(left.Clone(), ((FractionToken)right).Denominator.Clone());
+                var newDenom = ((FractionToken)right).Numerator.Clone();
+
+                return new FractionToken(newNum, newDenom);
+            }
+
+            return Multiply(left, Divide(new ConstantToken(1), right));
         }
 
         private static Token Exponentiate(Token left, Token right)
@@ -465,6 +586,20 @@ namespace Yet_Another_Simplifier
             if (left is ConstantToken && right is VariableToken)
             {
                 Console.WriteLine("Expression exponents not supported.");
+
+                return null;
+            }
+
+            if (left is ConstantToken && right is ExpressionToken)
+            {
+                Console.WriteLine("Expression exponents not supported.");
+
+                return null;
+            }
+
+            if (left is ConstantToken && right is FractionToken)
+            {
+                Console.WriteLine("Fraction exponents not supported.");
 
                 return null;
             }
@@ -494,9 +629,16 @@ namespace Yet_Another_Simplifier
                 return null;
             }
 
-            if (left is ConstantToken && right is ExpressionToken)
+            if (left is VariableToken && right is ExpressionToken)
             {
                 Console.WriteLine("Expression exponents not supported.");
+
+                return null;
+            }
+
+            if (left is VariableToken && right is FractionToken)
+            {
+                Console.WriteLine("Fraction exponents not supported.");
 
                 return null;
             }
@@ -512,14 +654,7 @@ namespace Yet_Another_Simplifier
 
                 return result;
             }
-
-            if (left is VariableToken && right is ExpressionToken)
-            {
-                Console.WriteLine("Expression exponents not supported.");
-
-                return null;
-            }
-
+            
             if (left is ExpressionToken && right is VariableToken)
             {
                 Console.WriteLine("Variable exponents not supported.");
@@ -530,6 +665,46 @@ namespace Yet_Another_Simplifier
             if (left is ExpressionToken && right is ExpressionToken)
             {
                 Console.WriteLine("Expression exponents not supported.");
+
+                return null;
+            }
+
+            if (left is ExpressionToken && right is FractionToken)
+            {
+                Console.WriteLine("Fraction exponents not supported.");
+
+                return null;
+            }
+
+            if (left is FractionToken && right is ConstantToken)
+            {
+                Token result = (FractionToken)left;
+
+                for (int i = 0; i < ((ConstantToken)right).NumericValue - 1; i++)
+                {
+                    result = Multiply(result, (FractionToken)left);
+                }
+
+                return result;
+            }
+
+            if (left is FractionToken && right is VariableToken)
+            {
+                Console.WriteLine("Variable exponents not supported.");
+
+                return null;
+            }
+
+            if (left is FractionToken && right is ExpressionToken)
+            {
+                Console.WriteLine("Expression exponents not supported.");
+
+                return null;
+            }
+
+            if (left is FractionToken && right is FractionToken)
+            {
+                Console.WriteLine("Fraction exponents not supported.");
 
                 return null;
             }

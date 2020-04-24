@@ -10,7 +10,9 @@ namespace Yet_Another_Simplifier
     {
         private string Input { get; set; }
         private int Pointer { get; set; }
-        
+
+        public Token LeftHandSide { get; set; }
+        public Token RightHandSide { get; set; }
 
         private Precedence LastPrecedence { get
             {
@@ -52,7 +54,7 @@ namespace Yet_Another_Simplifier
         private Stack<Token> _operationStack = new Stack<Token>();
 
         private bool NegateFlag { get; set; }
-
+        
         public Token ParseAndSimplify()
         {
             while (Pointer + 1 <= Input.Length - 1)
@@ -68,7 +70,7 @@ namespace Yet_Another_Simplifier
                 }
                 if (ParseEqualSign())
                 {
-                    return UnwindStacks();
+                    LeftHandSide = UnwindStacks();
                 }
                 else if (ParseParentheses())
                 {
@@ -131,18 +133,20 @@ namespace Yet_Another_Simplifier
                     }
                     else
                     {
-                        if (LastPrecedence == Precedence.Default)
-                        {
-                            _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+                        return CheckPrecedenceAndAssociativity();
 
-                            //LastPrecedence = GetPrecedence(Input[Pointer]);
-
-                            return ParseAndSimplify();
-                        }
-                        else
-                        {
-                            return CheckPrecedenceAndAssociativity();
-                        }
+                        //if (LastPrecedence == Precedence.Default)
+                        //{
+                        //    _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+                        //
+                        //    //LastPrecedence = GetPrecedence(Input[Pointer]);
+                        //
+                        //    return ParseAndSimplify();
+                        //}
+                        //else
+                        //{
+                        //    return CheckPrecedenceAndAssociativity();
+                        //}
                     }
                 }
                 else if (TryParseVariable())
@@ -191,7 +195,17 @@ namespace Yet_Another_Simplifier
                 }
             }
 
-            return UnwindStacks();
+            RightHandSide = UnwindStacks();
+
+            if (LeftHandSide == null)
+            {
+                return RightHandSide;
+            }
+            else
+            {
+                var final = Simplifier.DoOperation(new BinaryOperationToken { Value = "-" }, LeftHandSide, RightHandSide);
+                return new ExpressionToken(new List<Token> { final, new BinaryOperationToken { Value = "=" }, new ConstantToken(0) });
+            }
         }
         private Token CheckPrecedenceAndAssociativity()
         {
@@ -342,7 +356,17 @@ namespace Yet_Another_Simplifier
             var right = _expressionStack.Pop();
             var left  = _expressionStack.Pop();
 
-            var simplifiedResult = Simplifier.DoOperation(_operationStack.Pop(), left, right);
+            Token simplifiedResult = null;
+            try
+            {
+                simplifiedResult = Simplifier.DoOperation(_operationStack.Pop(), left, right);
+            }
+            catch (DivideByZeroException)
+            {
+                Console.WriteLine("Cannot divide by zero!");
+
+                return false;
+            }
 
             if (simplifiedResult == null)
             {
@@ -375,12 +399,15 @@ namespace Yet_Another_Simplifier
 
             while (_operationStack.Count > 0)
             {
-                TryEvaluateLastBinaryOperation();
+                if (!TryEvaluateLastBinaryOperation())
+                {
+                    return null;
+                }
             }
 
             if (_expressionStack.Count != 1)
             {
-                Console.WriteLine("Invalid expression count on the expression stack after final unwinding.");
+                throw new Exception("Invalid expression count on the expression stack after final unwinding.");
             }
 
             return _expressionStack.Pop();
@@ -403,6 +430,7 @@ namespace Yet_Another_Simplifier
         private bool TryParseConstant(out string value)
         {
             var sb = new StringBuilder();
+            string untrimmedFinal = null;
 
             if (!Const.Digits.Contains(Input[Pointer]))
             {
@@ -416,7 +444,9 @@ namespace Yet_Another_Simplifier
 
                 if (Pointer + 1 >= Input.Length)
                 {
-                    value =  sb.ToString().TrimStart('0');
+                    untrimmedFinal = sb.ToString();
+
+                    value = untrimmedFinal == "0" ? untrimmedFinal : untrimmedFinal.TrimStart('0');
 
                     return true;
                 }
@@ -430,7 +460,9 @@ namespace Yet_Another_Simplifier
 
             LastCharacter = Input[Pointer];
 
-            value = sb.ToString().TrimStart('0');
+            untrimmedFinal = sb.ToString();
+
+            value = untrimmedFinal == "0" ? untrimmedFinal : untrimmedFinal.TrimStart('0');
 
             return true;
         }
