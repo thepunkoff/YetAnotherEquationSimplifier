@@ -1,3 +1,6 @@
 /.vs
+/packages
 /Yet Another Simplifier/bin
 /Yet Another Simplifier/obj
+/Tests/bin
+/Tests/obj
