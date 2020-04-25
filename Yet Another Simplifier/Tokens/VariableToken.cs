@@ -55,7 +55,19 @@ namespace Yet_Another_Simplifier.Tokens
 
             foreach (var variable in Variables)
             {
-                sb.Append(variable.ToString());
+                if (Variables.Count == 1)
+                {
+                    sb.Append(variable.ToString());
+                }
+                else if (variable.Exponent == 1)
+                {
+                    sb.Append(variable.ToString());
+
+                }
+                else
+                {
+                    sb.Append($"({variable.ToString()})");
+                }
             }
 
             var result = sb.ToString();

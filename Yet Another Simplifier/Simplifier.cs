@@ -606,6 +606,11 @@ namespace Yet_Another_Simplifier
 
                 foreach (var member in ((ExpressionToken)left).Members)
                 {
+                    if (member is BinaryOperationToken)
+                    {
+                        continue;
+                    }
+
                     var token = Multiply(right, member);
 
                     if (token.Success)

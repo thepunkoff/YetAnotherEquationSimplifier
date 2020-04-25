@@ -66,29 +66,10 @@ namespace Yet_Another_Simplifier.Tokens
 
         public override string ToString()
         {
-            var numeratorString = string.Empty;
-            var denominatorString = string.Empty;
-
-            if (Numerator is ExpressionToken)
-            {
-                numeratorString = $"({Numerator.ToString()})";
-            }
-            else
-            {
-                numeratorString = Numerator.ToString();
-            }
-
-            if (Denominator is ExpressionToken)
-            {
-                denominatorString = $"({Denominator.ToString()})";
-            }
-            else
-            {
-                denominatorString = Denominator.ToString();
-            }
-
+            var numeratorString = Numerator.ToString();
+            var denominatorString = Denominator.ToString();
+            
             return $"[{numeratorString}/{denominatorString}]";
-
         }
     }
 }
