@@ -69,6 +69,11 @@ namespace Yet_Another_Simplifier
                 }
                 if (ParseEqualSign())
                 {
+                    if (LeftHandSide != null)
+                    {
+                        return OperationResult.CreateFailure("More than one equal sign in equation.");
+                    }
+
                     var eq = UnwindStacks();
 
                     if (eq.Success)
@@ -225,8 +230,24 @@ namespace Yet_Another_Simplifier
 
                 if (final.Success)
                 {
+                    Token answer = null;
+
+                    var gcd = final.Result.GreatestCommonDivisor();
+                    var eliminatedByGcd = Simplifier.DoOperation(new BinaryOperationToken { Value = "/" }, final.Result, new ConstantToken(gcd));
+
+                    if (eliminatedByGcd.Success)
+                    {
+                        answer = eliminatedByGcd.Result;
+                    }
+                    else
+                    {
+                        return OperationResult.CreateFailure(eliminatedByGcd.ErrorMessage);
+                    }
+
+                    answer = Simplifier.Order(answer);
+
                     return OperationResult.CreateSuccess(
-                        new ExpressionToken(new List<Token> { Simplifier.Order(final.Result), new BinaryOperationToken { Value = "=" }, new ConstantToken(0) })
+                        new ExpressionToken(new List<Token> { answer, new BinaryOperationToken { Value = "=" }, new ConstantToken(0) })
                     );
                 }
                 else
@@ -242,14 +263,14 @@ namespace Yet_Another_Simplifier
         {
             var precedence = GetPrecedence(Input[Pointer]);
 
-            //if (_parenthesesStack.Count >= 1)
-            //{
-            //    _parenthesesStack.Push(Input[Pointer]);
-            //}
-
             if (precedence > LastPrecedence)
             {
                 _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+
+                if (_parenthesesStack.Count >= 1)
+                {
+                    _parenthesesStack.Push(Input[Pointer]);
+                }
 
                 //LastPrecedence = precedence;
 

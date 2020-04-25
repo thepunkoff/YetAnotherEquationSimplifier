@@ -29,7 +29,14 @@ namespace Yet_Another_Simplifier.Tokens
 
         public override decimal GreatestCommonDivisor()
         {
-            return Utility.GreatestCommonDivisor(Members.Where(x => x is IHasNumericValue).Select(x => ((IHasNumericValue)x).NumericValue));
+            if (AppSettings.ConsiderConstantsInElimination)
+            {
+                return Utility.GreatestCommonDivisor(Members.Where(x => x is IHasNumericValue).Select(x => x.GreatestCommonDivisor()));
+            }
+            else
+            {
+                return Utility.GreatestCommonDivisor(Members.Where(x => x is VariableToken).Select(x => x.GreatestCommonDivisor()));
+            }
         }
 
         public override void NegateValue()

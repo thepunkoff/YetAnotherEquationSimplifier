@@ -1,5 +1,7 @@
 using NUnit.Framework;
+using System.Collections.Generic;
 using Yet_Another_Simplifier;
+using Yet_Another_Simplifier.Tokens;
 
 namespace Tests
 {
@@ -21,10 +23,39 @@ namespace Tests
 
         [TestCase("x^2+3.5xy+y=-4+y^2-yx+y", "x^2-y^2+4.5xy+4=0")]
         [TestCase("z+2xy^2+3yx^2-3=xy^2+yx^2+4+f", "2x^2y+xy^2-f+z-7=0")]
-        public void Test1(string input, string output)
+        [TestCase("-2x(a+b)(x-y^2)^1=1", "axy^2+bxy^2-ax^2-bx^2-0.5=0")]
+        [TestCase("x=y=0=^2", "More than one equal sign in equation.")]
+        [TestCase("0=^2", "Invalid syntax: binary sign cannot go after a binary sign a left parenthesis or an equal sign")]
+        
+        public void ParseAndSimplify_AnyInput_ExpectedOutput(string input, string output)
         {
             var parser = new Parser(input);
             Assert.AreEqual(parser.ParseAndSimplify().ToString(), output);
+        }
+
+        [TestCase("abx^2+ax^2")]
+        public void Order_UnOrderedMembers_OrderedMembers(string output)
+        {
+            var x = Simplifier.Order(
+                new ExpressionToken(
+                    new List<Token> {
+                        new VariableToken(1, new List<Variable> {
+                            new Variable('a', 1), new Variable('x', 2), }),
+                        new BinaryOperationToken{Value = "+"},
+                        new VariableToken(1, new List<Variable> {
+                            new Variable('a', 1), new Variable('b', 1), new Variable('x', 2), })
+                        }
+                    ));
+
+            Assert.AreEqual(Simplifier.Order(x).ToString(), output);
+        }
+
+        [TestCase(3.5, 1, 1)]
+        [TestCase(2.4, 4.8, 2.4)]
+        public void Gcd(decimal x, decimal y, decimal result)
+        {
+            var gcd = Utility.GreatestCommonDivisor(x, y);
+            Assert.AreEqual(gcd, result);
         }
     }
 }

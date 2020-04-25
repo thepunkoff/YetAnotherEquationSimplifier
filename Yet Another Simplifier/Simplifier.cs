@@ -442,12 +442,8 @@ namespace Yet_Another_Simplifier
                     }
                     else
                     {
-
-                    }
-                    {
                         return OperationResult.CreateFailure(token.ErrorMessage);
                     }
-
                 }
 
                 return AddMultiple(list);

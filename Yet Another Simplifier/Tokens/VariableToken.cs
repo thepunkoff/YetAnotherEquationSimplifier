@@ -70,7 +70,7 @@ namespace Yet_Another_Simplifier.Tokens
 
         public override decimal GreatestCommonDivisor()
         {
-            return Quotient;
+            return Quotient < 0 ? Quotient * -1 : Quotient;
         }
 
         public override int CompareTo(ExpressionMemberToken other)
@@ -95,32 +95,43 @@ namespace Yet_Another_Simplifier.Tokens
                 }
                 else
                 {
-                    var selfLetterIndex = LetterIndex(this);
-                    var otherLetterIndex = LetterIndex(v);
-
-                    if (selfLetterIndex < otherLetterIndex)
+                    if (Variables.Count > v.Variables.Count)
                     {
                         return 1;
                     }
-                    else if (selfLetterIndex > otherLetterIndex)
+                    else if (Variables.Count < v.Variables.Count)
                     {
                         return -1;
                     }
                     else
                     {
-                        if (NumericValue > v.NumericValue)
+                        var selfLetterIndex = LetterIndex(this);
+                        var otherLetterIndex = LetterIndex(v);
+
+                        if (selfLetterIndex < otherLetterIndex)
                         {
                             return 1;
                         }
-                        else if (NumericValue < v.NumericValue)
+                        else if (selfLetterIndex > otherLetterIndex)
                         {
                             return -1;
                         }
                         else
                         {
-                            return 0;
+                            if (NumericValue > v.NumericValue)
+                            {
+                                return 1;
+                            }
+                            else if (NumericValue < v.NumericValue)
+                            {
+                                return -1;
+                            }
+                            else
+                            {
+                                return 0;
+                            }
                         }
-                    }
+                    }                    
                 }
             }
 

@@ -49,7 +49,7 @@ namespace Yet_Another_Simplifier.Tokens
 
         public override decimal GreatestCommonDivisor()
         {
-            return NumericValue;
+            return NumericValue < 0 ? NumericValue * -1 : NumericValue;
         }
 
         public override void NegateValue()
