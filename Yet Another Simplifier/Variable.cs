@@ -35,5 +35,10 @@ namespace Yet_Another_Simplifier
                 return v.Exponent == Exponent && v.Letter == Letter;
             }
         }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Letter, Exponent);
+        }
     }
 }
