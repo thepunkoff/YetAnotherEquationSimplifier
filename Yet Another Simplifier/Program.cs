@@ -15,11 +15,6 @@ namespace Yet_Another_Simplifier
 
                 var output = parser.ParseAndSimplify();
 
-                if (output == null)
-                {
-                    continue;
-                }
-
                 var result = output.ToString();
 
                 Console.WriteLine(result);

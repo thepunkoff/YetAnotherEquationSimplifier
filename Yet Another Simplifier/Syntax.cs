@@ -9,6 +9,16 @@ namespace Yet_Another_Simplifier
     {
         public static SyntaxCheckResult CheckSyntax(char preceding, char current)
         {
+            var currentType = GetType(current);
+
+            if (currentType == '\0')
+            {
+                return new SyntaxCheckResult
+                {
+                    ErrorMessage = $"Unknown symbol: '{current}'"
+                };
+            }
+
             if (preceding == '\0')
             {
                 return new SyntaxCheckResult
@@ -17,10 +27,9 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            preceding = GetType(preceding);
-            current = GetType(current);
-
-            if ((current == 'p' && preceding != 'c') || (preceding == 'p' && current != 'c'))
+            var precedingType = GetType(preceding);
+            
+            if ((currentType == 'p' && precedingType != 'c') || (precedingType == 'p' && currentType != 'c'))
             {
                 return new SyntaxCheckResult
                 {
@@ -28,7 +37,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == Const.Subtract && "=(".Contains(preceding))
+            if (currentType == Const.Subtract && "=(".Contains(precedingType))
             {
                 return new SyntaxCheckResult
                 {
@@ -36,7 +45,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'c' && "vr".Contains(preceding))
+            if (currentType == 'c' && "vr".Contains(precedingType))
             {
                 return new SyntaxCheckResult
                 {
@@ -44,7 +53,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'v' && "r".Contains(preceding))
+            if (currentType == 'v' && "r".Contains(precedingType))
             {
                 return new SyntaxCheckResult
                 {
@@ -52,7 +61,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'b' && "blem".Contains(preceding))
+            if (currentType == 'b' && "blem".Contains(precedingType))
             {
                 return new SyntaxCheckResult
                 {
@@ -60,7 +69,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'r' && "blem".Contains(preceding))
+            if (currentType == 'r' && "blem".Contains(precedingType))
             {
                 return new SyntaxCheckResult
                 {
@@ -68,7 +77,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'e' && "bem".Contains(preceding))
+            if (currentType == 'e' && "bem".Contains(precedingType))
             {
                 return new SyntaxCheckResult
                 {
@@ -76,7 +85,7 @@ namespace Yet_Another_Simplifier
                 };
             }
 
-            if (current == 'm' && "bm".Contains(preceding))
+            if (currentType == 'm' && "bm".Contains(precedingType))
             {
                 return new SyntaxCheckResult
                 {
@@ -122,7 +131,7 @@ namespace Yet_Another_Simplifier
             }
             else
             {
-                throw new Exception("Undefined character type.");
+                return '\0';
             }
         }
     }

@@ -55,7 +55,7 @@ namespace Yet_Another_Simplifier
 
         private bool NegateFlag { get; set; }
         
-        public Token ParseAndSimplify()
+        public OperationResult ParseAndSimplify()
         {
             while (Pointer + 1 <= Input.Length - 1)
             {
@@ -65,12 +65,20 @@ namespace Yet_Another_Simplifier
 
                 if (!result.Success)
                 {
-                    Console.WriteLine(result.ErrorMessage);
-                    return null;
+                    return OperationResult.CreateFailure(result.ErrorMessage);
                 }
                 if (ParseEqualSign())
                 {
-                    LeftHandSide = UnwindStacks();
+                    var eq = UnwindStacks();
+
+                    if (eq.Success)
+                    {
+                        LeftHandSide = eq.Result;
+                    }
+                    else
+                    {
+                        OperationResult.CreateFailure(eq.ErrorMessage);
+                    }
                 }
                 else if (ParseParentheses())
                 {
@@ -95,12 +103,14 @@ namespace Yet_Another_Simplifier
 
                         //LastPrecedence = GetPrecedence(_operationStack.Peek().Value[0]);
 
-                        if (UnwindLastParentheses())
+                        if (UnwindLastParentheses(out string errorMessage))
                         {
                             return ParseAndSimplify();
                         }
-
-                        throw new Exception("Something's wrong with the parenteses stack. Take a look!");
+                        else
+                        {
+                            return OperationResult.CreateFailure(errorMessage);
+                        }
                     }
                     else
                     {
@@ -190,24 +200,45 @@ namespace Yet_Another_Simplifier
                 }
                 else
                 {
-                    Console.WriteLine($"Invalid token at pos. {Pointer}");
-                    return null;
+                    return OperationResult.CreateFailure($"Invalid token at pos. {Pointer}");
                 }
             }
 
-            RightHandSide = UnwindStacks();
+            var unwind = UnwindStacks();
+
+            if (unwind.Success)
+            {
+                RightHandSide = unwind.Result;
+            }
+            else
+            {
+                return OperationResult.CreateFailure(unwind.ErrorMessage);
+            }
 
             if (LeftHandSide == null)
             {
-                return RightHandSide;
+                return OperationResult.CreateSuccess(RightHandSide);
             }
             else
             {
                 var final = Simplifier.DoOperation(new BinaryOperationToken { Value = "-" }, LeftHandSide, RightHandSide);
-                return new ExpressionToken(new List<Token> { final, new BinaryOperationToken { Value = "=" }, new ConstantToken(0) });
+
+                if (final.Success)
+                {
+                    return OperationResult.CreateSuccess(
+                        new ExpressionToken(new List<Token> { Simplifier.Order(final.Result), new BinaryOperationToken { Value = "=" }, new ConstantToken(0) })
+                    );
+                }
+                else
+                {
+                    return OperationResult.CreateFailure(final.ErrorMessage);
+                }
             }
         }
-        private Token CheckPrecedenceAndAssociativity()
+
+        
+
+        private OperationResult CheckPrecedenceAndAssociativity()
         {
             var precedence = GetPrecedence(Input[Pointer]);
 
@@ -246,7 +277,7 @@ namespace Yet_Another_Simplifier
             }
         }
 
-        private bool UnwindLastParentheses()
+        private bool UnwindLastParentheses(out string errorMessage)
         {
             while(_parenthesesStack.Peek() != Const.LeftParenthesis)
             {
@@ -255,13 +286,17 @@ namespace Yet_Another_Simplifier
                     continue;
                 }
 
-                if (!TryEvaluateLastBinaryOperation())
+                if (!TryEvaluateLastBinaryOperation(out string error))
                 {
+                    errorMessage = error;
+
                     return false;
                 }
             }
 
             _parenthesesStack.Pop();
+
+            errorMessage = null;
 
             return true;
         }
@@ -322,12 +357,10 @@ namespace Yet_Another_Simplifier
             }
         }
 
-        private Token BinaryProceed()
+        private OperationResult BinaryProceed()
         {
-            if (TryEvaluateLastBinaryOperation())
+            if (TryEvaluateLastBinaryOperation(out string errorMessage))
             {
-                //_operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
-
                 if (_parenthesesStack.Count > 1)
                 {
                     _parenthesesStack.Pop();
@@ -341,15 +374,15 @@ namespace Yet_Another_Simplifier
             }
             else
             {
-                return null;
+                return OperationResult.CreateFailure(errorMessage);
             }
         }
 
-        private bool TryEvaluateLastBinaryOperation()
+        private bool TryEvaluateLastBinaryOperation(out string errorMessage)
         {
             if (_expressionStack.Count != _operationStack.Count + 1)
             {
-                Console.WriteLine($"Invalid token at pos. {Pointer}");
+                errorMessage = $"Invalid token at pos. {Pointer}";
                 return false;
             }
 
@@ -357,51 +390,55 @@ namespace Yet_Another_Simplifier
             var left  = _expressionStack.Pop();
 
             Token simplifiedResult = null;
-            try
+
+            var op = Simplifier.DoOperation(_operationStack.Pop(), left, right);
+
+            if (op.Success)
             {
-                simplifiedResult = Simplifier.DoOperation(_operationStack.Pop(), left, right);
+                simplifiedResult = op.Result;
             }
-            catch (DivideByZeroException)
+            else
             {
-                Console.WriteLine("Cannot divide by zero!");
+                errorMessage = op.ErrorMessage;
+
 
                 return false;
             }
 
             if (simplifiedResult == null)
             {
-                return false;
+                throw new Exception("simplified result is null");
             }
 
             _expressionStack.Push(simplifiedResult);
 
+            errorMessage = null;
+
             return true;
         }
 
-        private Token UnwindStacks()
+        private OperationResult UnwindStacks()
         {
             if (_expressionStack.Count != _operationStack.Count + 1)
             {
-                Console.WriteLine($"Invalid token at pos. {Pointer}");
-                return null;
+                return OperationResult.CreateFailure($"Invalid token at pos. {Pointer}");
             }
 
             if (_expressionStack.Count == 0 && _operationStack.Count == 0)
             {
-                Console.WriteLine("Stacks were empty. Probable equal sign in the beginning of the input.");
-                return null;
+                return OperationResult.CreateFailure("Stacks were empty. Probable equal sign in the beginning of the input.");
             }
 
             if (_parenthesesStack.Count != 0)
             {
-                Console.WriteLine($"{_parenthesesStack.Count} parentheses weren't closed.");
+                return OperationResult.CreateFailure($"{_parenthesesStack.Count} parentheses weren't closed.");
             }
 
             while (_operationStack.Count > 0)
             {
-                if (!TryEvaluateLastBinaryOperation())
+                if (!TryEvaluateLastBinaryOperation(out string errorMessage))
                 {
-                    return null;
+                    return OperationResult.CreateFailure(errorMessage);
                 }
             }
 
@@ -410,7 +447,7 @@ namespace Yet_Another_Simplifier
                 throw new Exception("Invalid expression count on the expression stack after final unwinding.");
             }
 
-            return _expressionStack.Pop();
+            return OperationResult.CreateSuccess(_expressionStack.Pop());
         }
 
         private bool TryParseVariable()

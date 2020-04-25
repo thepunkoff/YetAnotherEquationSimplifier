@@ -14,7 +14,7 @@ namespace Yet_Another_Simplifier.Tokens
         }
 
         public List<Token> Members { get; set; }
-
+        
         public override Token Clone()
         {
             var newMembers = new List<Token>();
