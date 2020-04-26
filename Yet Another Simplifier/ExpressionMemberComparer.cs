@@ -6,9 +6,9 @@ using Yet_Another_Simplifier.Tokens;
 
 namespace Yet_Another_Simplifier
 {
-    public class ExpressionMemberComparer : IComparer<ExpressionMemberToken>
+    public class ExpressionMemberComparer : IComparer<IExpressionMemberComparable>
     {
-        public int Compare(ExpressionMemberToken x, ExpressionMemberToken y)
+        public int Compare(IExpressionMemberComparable x, IExpressionMemberComparable y)
         {
             return x.CompareTo(y);
         }

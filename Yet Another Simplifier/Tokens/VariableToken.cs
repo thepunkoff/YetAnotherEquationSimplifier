@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Yet_Another_Simplifier.Tokens
 {
-    public class VariableToken : ExpressionMemberToken, IHasNumericValue
+    public class VariableToken : ValueToken, IExpressionMemberComparable, IHasNumericValue, IEliminatable
     {
         public VariableToken(decimal quotient, List<Variable> variables)
         {
@@ -16,7 +16,6 @@ namespace Yet_Another_Simplifier.Tokens
 
         public decimal Quotient { get; set; }
         public List<Variable> Variables { get; set; }
-        public override ExpressionMemberPrecedence Precedence { get => ExpressionMemberPrecedence.Variable; }
 
         public decimal NumericValue { get => Quotient; set => Quotient = value; }
 
@@ -30,7 +29,7 @@ namespace Yet_Another_Simplifier.Tokens
             Quotient = value;
         }
 
-        public override void NegateValue()
+        public override void Negate()
         {
             Quotient *= -1;
         }
@@ -82,10 +81,11 @@ namespace Yet_Another_Simplifier.Tokens
 
         public override decimal GreatestCommonDivisor()
         {
-            return Quotient < 0 ? Quotient * -1 : Quotient;
+            if (Quotient == 0) return 1;
+            else return Quotient < 0 ? Quotient * -1 : Quotient;
         }
 
-        public override int CompareTo(ExpressionMemberToken other)
+        public int CompareTo(IExpressionMemberComparable other)
         {
             if (other is ConstantToken c)
             {
@@ -163,6 +163,11 @@ namespace Yet_Another_Simplifier.Tokens
         private decimal ExponentIndex(VariableToken v)
         {
             return v.Variables.Select(x => x.Exponent).Aggregate((a, b) => a * b);
+        }
+
+        public ValueToken Eliminate(decimal value)
+        {
+            return new VariableToken(Quotient / value, new List<Variable>(Variables));
         }
     }
 }

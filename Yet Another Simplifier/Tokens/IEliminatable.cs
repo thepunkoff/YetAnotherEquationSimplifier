@@ -4,9 +4,8 @@ using System.Text;
 
 namespace Yet_Another_Simplifier.Tokens
 {
-    public abstract class Token
+    public interface IEliminatable
     {
-        public string Value { get; set; }
-        public abstract Token Clone();
+        ValueToken Eliminate(decimal value);
     }
 }

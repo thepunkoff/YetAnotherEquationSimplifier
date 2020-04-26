@@ -4,26 +4,23 @@ using System.Text;
 
 namespace Yet_Another_Simplifier.Tokens
 {
-    public class FractionToken : ExpressionMemberToken
+    public class FractionToken : ValueToken, IExpressionMemberComparable, IEliminatable
     {
-        public FractionToken(Token numerator, Token denominator)
+        public FractionToken(ValueToken numerator, ValueToken denominator)
         {
-            var gcd = 
-
             Numerator = numerator;
             Denominator = denominator;
         }
 
-        public Token Numerator { get; set; }
-        public Token Denominator { get; set; }
-        public override ExpressionMemberPrecedence Precedence { get => ExpressionMemberPrecedence.Fraction; }
+        public ValueToken Numerator { get; set; }
+        public ValueToken Denominator { get; set; }
 
         public override Token Clone()
         {
-            return new FractionToken(Numerator.Clone(), Denominator.Clone());
+            return new FractionToken((ValueToken)Numerator.Clone(), (ValueToken)Denominator.Clone());
         }
 
-        public override int CompareTo(ExpressionMemberToken other)
+        public int CompareTo(IExpressionMemberComparable other)
         {
             if (other is ConstantToken)
             {
@@ -54,14 +51,37 @@ namespace Yet_Another_Simplifier.Tokens
             throw new Exception("Unknown comparison type.");
         }
 
-        public override decimal GreatestCommonDivisor()
+        public ValueToken Eliminate(decimal value)
+        {
+            if (value == 1)
+            {
+                return this;
+            }
+            else
+            {
+                var newNum = ((IEliminatable)Numerator).Eliminate(value);
+                var newDenom = ((IEliminatable)Denominator).Eliminate(value);
+
+                if (newDenom is ConstantToken c)
+                {
+                    if (c.NumericValue == 1)
+                    {
+                        return newNum;
+                    }
+                }
+
+                return new FractionToken(newNum, newDenom);
+            }
+        }
+
+        public override  decimal GreatestCommonDivisor()
         {
             return Utility.GreatestCommonDivisor(Numerator.GreatestCommonDivisor(), Denominator.GreatestCommonDivisor());
         }
 
-        public override void NegateValue()
+        public override void Negate()
         {
-            Numerator.NegateValue();
+            Numerator.Negate();
         }
 
         public override string ToString()

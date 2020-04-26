@@ -11,16 +11,6 @@ namespace Yet_Another_Simplifier.Tokens
             return new BinaryOperationToken { Value = Value };
         }
 
-        public override decimal GreatestCommonDivisor()
-        {
-            return 1;
-        }
-
-        public override void NegateValue()
-        {
-            throw new NotImplementedException();
-        }
-
         public override string ToString()
         {
             return Value;

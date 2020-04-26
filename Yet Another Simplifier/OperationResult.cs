@@ -8,7 +8,7 @@ namespace Yet_Another_Simplifier
     public class OperationResult
     {
         public bool Success { get; set; }
-        public Token Result { get; set; }
+        public ValueToken Result { get; set; }
         public string ErrorMessage { get; set; }
 
         public static OperationResult CreateFailure(string errorMessage)
@@ -16,7 +16,7 @@ namespace Yet_Another_Simplifier
             return new OperationResult { Success = false, ErrorMessage = errorMessage };
         }
 
-        public static OperationResult CreateSuccess(Token result)
+        public static OperationResult CreateSuccess(ValueToken result)
         {
             return new OperationResult { Success = true, Result = result };
         }

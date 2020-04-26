@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Yet_Another_Simplifier.Tokens;
@@ -50,8 +51,8 @@ namespace Yet_Another_Simplifier
 
         private Stack<char> _parenthesesStack = new Stack<char>();
 
-        private Stack<Token> _expressionStack = new Stack<Token>();
-        private Stack<Token> _operationStack = new Stack<Token>();
+        private Stack<ValueToken> _expressionStack = new Stack<ValueToken>();
+        private Stack<BinaryOperationToken> _operationStack = new Stack<BinaryOperationToken>();
 
         private bool NegateFlag { get; set; }
         
@@ -131,7 +132,7 @@ namespace Yet_Another_Simplifier
                 {
                     if (_parenthesesStack.Count > 0)
                     {
-                        if (_parenthesesStack.Count == 1)
+                        if (_parenthesesStack.Peek() == Const.LeftParenthesis)
                         {
                             _parenthesesStack.Push(Input[Pointer]);
 
@@ -141,7 +142,7 @@ namespace Yet_Another_Simplifier
 
                             return ParseAndSimplify();
                         }
-                        if (_parenthesesStack.Count >= 2)
+                        else
                         {
                             return CheckPrecedenceAndAssociativity();
                         }
@@ -181,7 +182,7 @@ namespace Yet_Another_Simplifier
 
                     if (NegateFlag && _parenthesesStack.Count == 0)
                     {
-                        token.NegateValue();
+                        token.Negate();
                         NegateFlag = false;
                     }
 
@@ -196,7 +197,7 @@ namespace Yet_Another_Simplifier
 
                     if (NegateFlag && _parenthesesStack.Count == 0)
                     {
-                        token.NegateValue();
+                        token.Negate();
                         NegateFlag = false;
                     }
 
@@ -222,29 +223,24 @@ namespace Yet_Another_Simplifier
 
             if (LeftHandSide == null)
             {
-                return OperationResult.CreateSuccess(RightHandSide);
+                return OperationResult.CreateSuccess((ValueToken)RightHandSide);
             }
             else
             {
-                var final = Simplifier.DoOperation(new BinaryOperationToken { Value = "-" }, LeftHandSide, RightHandSide);
+                var final = Simplifier.DoOperation(new BinaryOperationToken { Value = "-" }, (ValueToken)LeftHandSide, (ValueToken)RightHandSide);
 
                 if (final.Success)
                 {
-                    Token answer = null;
-
                     var gcd = final.Result.GreatestCommonDivisor();
-                    var eliminatedByGcd = Simplifier.DoOperation(new BinaryOperationToken { Value = "/" }, final.Result, new ConstantToken(gcd));
 
-                    if (eliminatedByGcd.Success)
-                    {
-                        answer = eliminatedByGcd.Result;
-                    }
-                    else
-                    {
-                        return OperationResult.CreateFailure(eliminatedByGcd.ErrorMessage);
-                    }
+                    var answer = ((IEliminatable)final.Result).Eliminate(gcd);
 
                     answer = Simplifier.Order(answer);
+
+                    if (answer.ToString() == "0")
+                    {
+                        return OperationResult.CreateFailure("That's right!");
+                    }
 
                     return OperationResult.CreateSuccess(
                         new ExpressionToken(new List<Token> { answer, new BinaryOperationToken { Value = "=" }, new ConstantToken(0) })
@@ -256,8 +252,6 @@ namespace Yet_Another_Simplifier
                 }
             }
         }
-
-        
 
         private OperationResult CheckPrecedenceAndAssociativity()
         {
@@ -410,7 +404,7 @@ namespace Yet_Another_Simplifier
             var right = _expressionStack.Pop();
             var left  = _expressionStack.Pop();
 
-            Token simplifiedResult = null;
+            ValueToken simplifiedResult = null;
 
             var op = Simplifier.DoOperation(_operationStack.Pop(), left, right);
 

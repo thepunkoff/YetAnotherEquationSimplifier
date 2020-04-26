@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Yet_Another_Simplifier.Tokens
 {
-    public class ConstantToken : ExpressionMemberToken, IHasNumericValue
+    public class ConstantToken : ValueToken, IExpressionMemberComparable, IHasNumericValue, IEliminatable
     {
         public ConstantToken(decimal numericValue)
         {
@@ -12,14 +12,13 @@ namespace Yet_Another_Simplifier.Tokens
         }
 
         public decimal NumericValue { get; set; }
-        public override ExpressionMemberPrecedence Precedence { get => ExpressionMemberPrecedence.Constant; }
 
         public override Token Clone()
         {
             return new ConstantToken(NumericValue);
         }
 
-        public override int CompareTo(ExpressionMemberToken other)
+        public int CompareTo(IExpressionMemberComparable other)
         {
             if (other is ConstantToken)
             {
@@ -47,12 +46,18 @@ namespace Yet_Another_Simplifier.Tokens
             throw new Exception("Unknown comparison type.");
         }
 
-        public override decimal GreatestCommonDivisor()
+        public ValueToken Eliminate(decimal value)
         {
-            return NumericValue < 0 ? NumericValue * -1 : NumericValue;
+            return new ConstantToken(NumericValue / value);
         }
 
-        public override void NegateValue()
+        public override decimal GreatestCommonDivisor()
+        {
+            if (NumericValue == 0) return 1;
+            else return NumericValue < 0 ? NumericValue * -1 : NumericValue;
+        }
+
+        public override void Negate()
         {
             NumericValue *= -1;
         }
