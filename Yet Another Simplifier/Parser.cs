@@ -69,170 +69,20 @@ namespace Yet_Another_Simplifier
                     return OperationResult.CreateFailure(result.ErrorMessage);
                 }
 
-                if (IsEqualSign())
-                {
-                    if (LeftHandSide != null)
-                    {
-                        return OperationResult.CreateFailure("More than one equal sign in equation.");
-                    }
-
-                    var eq = UnwindStacks();
-
-                    if (eq.Success)
-                    {
-                        LeftHandSide = eq.Result;
-                    }
-                    else
-                    {
-                        OperationResult.CreateFailure(eq.ErrorMessage);
-                    }
-                }
-                else if (IsParenthesis())
-                {
-                    if (Input[Pointer] == Const.LeftParenthesis)
-                    {
-                        if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]")|| LastCharacter == Const.RightParenthesis)
-                        {
-                            _operationStack.Push(new BinaryOperationToken { Value = "*"});
-                            //LastPrecedence = Precedence.Multiply;
-                        }
-
-                        _parenthesesStack.Push(Input[Pointer]);
-
-                        LastCharacter = Input[Pointer];
-                        //LastPrecedence = Precedence.Default;
-
-                        return ParseAndSimplify();
-                    }
-                    else if (Input[Pointer] == Const.RightParenthesis)
-                    {
-                        _parenthesesStack.Push(Input[Pointer]);
-
-                        //LastPrecedence = GetPrecedence(_operationStack.Peek().Value[0]);
-
-                        if (UnwindLastParentheses(out string errorMessage))
-                        {
-                            return ParseAndSimplify();
-                        }
-                        else
-                        {
-                            return OperationResult.CreateFailure(errorMessage);
-                        }
-                    }
-                    else
-                    {
-                        throw new Exception("Wrong parenthesis token. Check Const class.");
-                    }
-                }
-                else if (IsUnaryMinus())
-                {
-                    NegateFlag = true;
-                    return ParseAndSimplify();
-                }
-                else if (IsBinarySign())
-                {
-                    if (_parenthesesStack.Count > 0)
-                    {
-                        if (_parenthesesStack.Peek() == Const.LeftParenthesis)
-                        {
-                            _parenthesesStack.Push(Input[Pointer]);
-
-                            _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
-
-                            return ParseAndSimplify();
-                        }
-                        else
-                        {
-                            return CheckPrecedenceAndAssociativity();
-                        }
-                    }
-                    else
-                    {
-                        return CheckPrecedenceAndAssociativity();
-                    }
-                }
-                else if (IsVariable())
-                {
-                    if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]") || LastCharacter == Const.RightParenthesis)
-                    {
-                        _operationStack.Push(new BinaryOperationToken { Value = "*" });
-                        if (_parenthesesStack.Count >= 1)
-                        {
-                            _parenthesesStack.Push('*');
-                        }
-                    }
-
-                    LastCharacter = Input[Pointer];
-                    var token = new VariableToken(1, new List<Variable> { new Variable { Letter = Input[Pointer], Exponent = 1 } });
-
-                    if (NegateFlag && _parenthesesStack.Count == 0)
-                    {
-                        token.Negate();
-                        NegateFlag = false;
-                    }
-
-                    _expressionStack.Push(token);
-                    return ParseAndSimplify();
-                }
-                else if (IsConstant())
-                {
-                    string value = null;
-                    var sb = new StringBuilder();
-                    string untrimmedFinal = null;
-
-                    var wasPoint = false;
-
-                    while (Const.Digits.Contains(Input[Pointer]) || Input[Pointer] == Const.Point)
-                    {
-                        if (Input[Pointer] == Const.Point)
-                        {
-                            if (!wasPoint)
-                            {
-                                wasPoint = true;
-                            }
-                            else
-                            {
-                                return OperationResult.CreateFailure("A number cannot have multiple points.");
-                            }
-                        }
-
-                        sb.Append(Input[Pointer]);
-
-                        if (Pointer + 1 >= Input.Length || (Input[Pointer + 1] != Const.Point && !Const.Digits.Contains(Input[Pointer + 1])))
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            Pointer++;
-                        }
-                    }
-
-                    LastCharacter = Input[Pointer];
-
-                    untrimmedFinal = sb.ToString();
-
-                    value = untrimmedFinal == "0" ? untrimmedFinal : untrimmedFinal.TrimStart('0');
-
-                    var parsedDecimal = decimal.Parse(value);
-
-                    var token = new ConstantToken(parsedDecimal);
-
-                    if (NegateFlag && _parenthesesStack.Count == 0)
-                    {
-                        token.Negate();
-                        NegateFlag = false;
-                    }
-
-                    _expressionStack.Push(token);
-                    return ParseAndSimplify();
-                }
-                else
-                {
-                    return OperationResult.CreateFailure($"Invalid token at pos. {Pointer}");
-                }
+                if (IsEqualSign()) return ParseLeftSide();
+                else if (IsParenthesis()) return ParseParentheses(); 
+                else if (IsUnaryMinus()) return ParseUnaryMinus();
+                else if (IsBinarySign()) return ParseBinarySign();
+                else if (IsVariable()) return ParseVariable();
+                else if (IsConstant()) return ParseConstant();
+                else return OperationResult.CreateFailure($"Invalid token at pos. {Pointer}");
             }
 
+            return ParseRightSide();
+        }
+
+        private OperationResult ParseRightSide()
+        {
             var unwind = UnwindStacks();
 
             if (unwind.Success)
@@ -274,6 +124,168 @@ namespace Yet_Another_Simplifier
                     return OperationResult.CreateFailure(final.ErrorMessage);
                 }
             }
+        }
+
+        private OperationResult ParseLeftSide()
+        {
+            if (LeftHandSide != null)
+            {
+                return OperationResult.CreateFailure("More than one equal sign in equation.");
+            }
+
+            var eq = UnwindStacks();
+
+            if (eq.Success)
+            {
+                LeftHandSide = eq.Result;
+
+                return ParseAndSimplify();
+            }
+            else
+            {
+                return OperationResult.CreateFailure(eq.ErrorMessage);
+            }
+        }
+
+        private OperationResult ParseParentheses()
+        {
+            if (Input[Pointer] == Const.LeftParenthesis)
+            {
+                if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]") || LastCharacter == Const.RightParenthesis)
+                {
+                    _operationStack.Push(new BinaryOperationToken { Value = "*" });
+                }
+
+                _parenthesesStack.Push(Input[Pointer]);
+
+                LastCharacter = Input[Pointer];
+
+                return ParseAndSimplify();
+            }
+            else if (Input[Pointer] == Const.RightParenthesis)
+            {
+                _parenthesesStack.Push(Input[Pointer]);
+
+                if (UnwindLastParentheses(out string errorMessage))
+                {
+                    return ParseAndSimplify();
+                }
+                else
+                {
+                    return OperationResult.CreateFailure(errorMessage);
+                }
+            }
+            else
+            {
+                throw new Exception("Wrong parenthesis token. Check Const class.");
+            }
+        }
+
+        private OperationResult ParseUnaryMinus()
+        {
+            NegateFlag = true;
+            return ParseAndSimplify();
+        }
+
+        private OperationResult ParseBinarySign()
+        {
+            if (_parenthesesStack.Count > 0)
+            {
+                if (_parenthesesStack.Peek() == Const.LeftParenthesis)
+                {
+                    _parenthesesStack.Push(Input[Pointer]);
+
+                    _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
+
+                    return ParseAndSimplify();
+                }
+                else
+                {
+                    return CheckPrecedenceAndAssociativity();
+                }
+            }
+            else
+            {
+                return CheckPrecedenceAndAssociativity();
+            }
+        }
+
+        private OperationResult ParseVariable()
+        {
+            if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]") || LastCharacter == Const.RightParenthesis)
+            {
+                _operationStack.Push(new BinaryOperationToken { Value = "*" });
+                if (_parenthesesStack.Count >= 1)
+                {
+                    _parenthesesStack.Push('*');
+                }
+            }
+
+            LastCharacter = Input[Pointer];
+            var token = new VariableToken(1, new List<Variable> { new Variable { Letter = Input[Pointer], Exponent = 1 } });
+
+            if (NegateFlag && _parenthesesStack.Count == 0)
+            {
+                token.Negate();
+                NegateFlag = false;
+            }
+
+            _expressionStack.Push(token);
+            return ParseAndSimplify();
+        }
+
+        private OperationResult ParseConstant()
+        {
+            string value = null;
+            var sb = new StringBuilder();
+            string untrimmedFinal = null;
+
+            var wasPoint = false;
+
+            while (Const.Digits.Contains(Input[Pointer]) || Input[Pointer] == Const.Point)
+            {
+                if (Input[Pointer] == Const.Point)
+                {
+                    if (!wasPoint)
+                    {
+                        wasPoint = true;
+                    }
+                    else
+                    {
+                        return OperationResult.CreateFailure("A number cannot have multiple points.");
+                    }
+                }
+
+                sb.Append(Input[Pointer]);
+
+                if (Pointer + 1 >= Input.Length || (Input[Pointer + 1] != Const.Point && !Const.Digits.Contains(Input[Pointer + 1])))
+                {
+                    break;
+                }
+                else
+                {
+                    Pointer++;
+                }
+            }
+
+            LastCharacter = Input[Pointer];
+
+            untrimmedFinal = sb.ToString();
+
+            value = untrimmedFinal == "0" ? untrimmedFinal : untrimmedFinal.TrimStart('0');
+
+            var parsedDecimal = decimal.Parse(value);
+
+            var token = new ConstantToken(parsedDecimal);
+
+            if (NegateFlag && _parenthesesStack.Count == 0)
+            {
+                token.Negate();
+                NegateFlag = false;
+            }
+
+            _expressionStack.Push(token);
+            return ParseAndSimplify();
         }
 
         private OperationResult CheckPrecedenceAndAssociativity()
