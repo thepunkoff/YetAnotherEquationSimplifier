@@ -68,7 +68,8 @@ namespace Yet_Another_Simplifier
                 {
                     return OperationResult.CreateFailure(result.ErrorMessage);
                 }
-                if (ParseEqualSign())
+
+                if (IsEqualSign())
                 {
                     if (LeftHandSide != null)
                     {
@@ -86,7 +87,7 @@ namespace Yet_Another_Simplifier
                         OperationResult.CreateFailure(eq.ErrorMessage);
                     }
                 }
-                else if (ParseParentheses())
+                else if (IsParenthesis())
                 {
                     if (Input[Pointer] == Const.LeftParenthesis)
                     {
@@ -123,12 +124,12 @@ namespace Yet_Another_Simplifier
                         throw new Exception("Wrong parenthesis token. Check Const class.");
                     }
                 }
-                else if (ParseUnaryMinus())
+                else if (IsUnaryMinus())
                 {
                     NegateFlag = true;
                     return ParseAndSimplify();
                 }
-                else if (ParseBinarySign())
+                else if (IsBinarySign())
                 {
                     if (_parenthesesStack.Count > 0)
                     {
@@ -137,8 +138,6 @@ namespace Yet_Another_Simplifier
                             _parenthesesStack.Push(Input[Pointer]);
 
                             _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
-
-                            //LastPrecedence = GetPrecedence(Input[Pointer]);
 
                             return ParseAndSimplify();
                         }
@@ -150,22 +149,9 @@ namespace Yet_Another_Simplifier
                     else
                     {
                         return CheckPrecedenceAndAssociativity();
-
-                        //if (LastPrecedence == Precedence.Default)
-                        //{
-                        //    _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
-                        //
-                        //    //LastPrecedence = GetPrecedence(Input[Pointer]);
-                        //
-                        //    return ParseAndSimplify();
-                        //}
-                        //else
-                        //{
-                        //    return CheckPrecedenceAndAssociativity();
-                        //}
                     }
                 }
-                else if (TryParseVariable())
+                else if (IsVariable())
                 {
                     if (Const.Digits.Contains(LastCharacter) || Regex.IsMatch(LastCharacter.ToString(), "[a-z]") || LastCharacter == Const.RightParenthesis)
                     {
@@ -174,7 +160,6 @@ namespace Yet_Another_Simplifier
                         {
                             _parenthesesStack.Push('*');
                         }
-                        //LastPrecedence = Precedence.Multiply;
                     }
 
                     LastCharacter = Input[Pointer];
@@ -189,8 +174,46 @@ namespace Yet_Another_Simplifier
                     _expressionStack.Push(token);
                     return ParseAndSimplify();
                 }
-                else if (TryParseConstant(out string value))
+                else if (IsConstant())
                 {
+                    string value = null;
+                    var sb = new StringBuilder();
+                    string untrimmedFinal = null;
+
+                    var wasPoint = false;
+
+                    while (Const.Digits.Contains(Input[Pointer]) || Input[Pointer] == Const.Point)
+                    {
+                        if (Input[Pointer] == Const.Point)
+                        {
+                            if (!wasPoint)
+                            {
+                                wasPoint = true;
+                            }
+                            else
+                            {
+                                return OperationResult.CreateFailure("A number cannot have multiple points.");
+                            }
+                        }
+
+                        sb.Append(Input[Pointer]);
+
+                        if (Pointer + 1 >= Input.Length || (Input[Pointer + 1] != Const.Point && !Const.Digits.Contains(Input[Pointer + 1])))
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            Pointer++;
+                        }
+                    }
+
+                    LastCharacter = Input[Pointer];
+
+                    untrimmedFinal = sb.ToString();
+
+                    value = untrimmedFinal == "0" ? untrimmedFinal : untrimmedFinal.TrimStart('0');
+
                     var parsedDecimal = decimal.Parse(value);
 
                     var token = new ConstantToken(parsedDecimal);
@@ -266,26 +289,20 @@ namespace Yet_Another_Simplifier
                     _parenthesesStack.Push(Input[Pointer]);
                 }
 
-                //LastPrecedence = precedence;
-
                 return ParseAndSimplify();
             }
             else if (precedence < LastPrecedence)
             {
-                //LastPrecedence = precedence;
                 return BinaryProceed();
             }
             else
             {
                 if (GetAssociativity() == Associativity.Left)
                 {
-                    //LastPrecedence = precedence;
                     return BinaryProceed();
                 }
                 else
                 {
-                    //LastPrecedence = precedence;
-
                     _operationStack.Push(new BinaryOperationToken { Value = Input[Pointer].ToString() });
                     return ParseAndSimplify();
                 }
@@ -465,7 +482,7 @@ namespace Yet_Another_Simplifier
             return OperationResult.CreateSuccess(_expressionStack.Pop());
         }
 
-        private bool TryParseVariable()
+        private bool IsVariable()
         {
             var stringRepresentation = Input[Pointer].ToString();
 
@@ -479,47 +496,21 @@ namespace Yet_Another_Simplifier
             }
         }
 
-        private bool TryParseConstant(out string value)
+        private bool IsConstant()
         {
-            var sb = new StringBuilder();
-            string untrimmedFinal = null;
+            
 
-            if (!Const.Digits.Contains(Input[Pointer]))
+            if (Const.Digits.Contains(Input[Pointer]))
             {
-                value = null;
+                return true;
+            }
+            else
+            {
                 return false;
             }
-
-            while (Const.Digits.Contains(Input[Pointer]) || Input[Pointer] == Const.Point)
-            {
-                sb.Append(Input[Pointer]);
-
-                if (Pointer + 1 >= Input.Length)
-                {
-                    untrimmedFinal = sb.ToString();
-
-                    value = untrimmedFinal == "0" ? untrimmedFinal : untrimmedFinal.TrimStart('0');
-
-                    return true;
-                }
-                else
-                {
-                    Pointer++;
-                }
-            }
-
-            Pointer--;
-
-            LastCharacter = Input[Pointer];
-
-            untrimmedFinal = sb.ToString();
-
-            value = untrimmedFinal == "0" ? untrimmedFinal : untrimmedFinal.TrimStart('0');
-
-            return true;
         }
 
-        private bool ParseUnaryMinus()
+        private bool IsUnaryMinus()
         {
             if (Input[Pointer] == Const.Subtract && "\0=(".Contains(LastCharacter))
             {
@@ -531,7 +522,7 @@ namespace Yet_Another_Simplifier
             }
         }
 
-        private bool ParseBinarySign()
+        private bool IsBinarySign()
         {
             if (Const.ExclusivelyBinarySigns.Contains(Input[Pointer]) || Input[Pointer] == Const.Subtract)
             {
@@ -545,7 +536,7 @@ namespace Yet_Another_Simplifier
             }
         }
 
-        private bool ParseParentheses()
+        private bool IsParenthesis()
         {
             if (Const.Parentheses.Contains(Input[Pointer]))
             {
@@ -557,7 +548,7 @@ namespace Yet_Another_Simplifier
             }
         }
 
-        private bool ParseEqualSign()
+        private bool IsEqualSign()
         {
             if (Input[Pointer] == '=')
             {
