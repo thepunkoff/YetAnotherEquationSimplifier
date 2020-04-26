@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Yet_Another_Simplifier
+namespace Yet_Another_Simplifier.Models
 {
     public struct Variable
     {

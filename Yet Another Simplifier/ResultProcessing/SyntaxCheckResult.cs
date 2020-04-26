@@ -1,4 +1,4 @@
-﻿namespace Yet_Another_Simplifier
+﻿namespace Yet_Another_Simplifier.ResultProcessing
 {
     public class SyntaxCheckResult
     {

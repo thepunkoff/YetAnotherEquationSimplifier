@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using Yet_Another_Simplifier.ResultProcessing;
 
-namespace Yet_Another_Simplifier
+namespace Yet_Another_Simplifier.Core
 {
     public static class Syntax
     {

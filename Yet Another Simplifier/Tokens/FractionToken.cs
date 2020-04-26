@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using Yet_Another_Simplifier.Interfaces;
 
 namespace Yet_Another_Simplifier.Tokens
 {

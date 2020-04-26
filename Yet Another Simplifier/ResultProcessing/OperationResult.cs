@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Yet_Another_Simplifier.Tokens;
+﻿using Yet_Another_Simplifier.Tokens;
 
-namespace Yet_Another_Simplifier
+namespace Yet_Another_Simplifier.ResultProcessing
 {
     public class OperationResult
     {

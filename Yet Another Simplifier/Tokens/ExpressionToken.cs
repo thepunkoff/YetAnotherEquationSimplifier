@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Yet_Another_Simplifier.Interfaces;
 
 namespace Yet_Another_Simplifier.Tokens
 {

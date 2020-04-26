@@ -1,5 +1,5 @@
 ﻿using System;
-using Yet_Another_Simplifier.Extensions;
+using Yet_Another_Simplifier.Core;
 
 namespace Yet_Another_Simplifier
 {

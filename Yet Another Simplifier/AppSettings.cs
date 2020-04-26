@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Yet_Another_Simplifier
+﻿namespace Yet_Another_Simplifier
 {
     public static class AppSettings
     {

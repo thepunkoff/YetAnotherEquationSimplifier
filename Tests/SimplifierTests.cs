@@ -2,6 +2,8 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
 using Yet_Another_Simplifier;
+using Yet_Another_Simplifier.Core;
+using Yet_Another_Simplifier.Models;
 using Yet_Another_Simplifier.Tokens;
 
 namespace Tests
